@@ -1,6 +1,10 @@
 import { invoke } from "@tauri-apps/api/core";
 
-// Relógios globais para cancelar se o usuário clicar no X
+import miiNormal from '../assets/reacoes/mii-normal.png';
+import miiFrustrado from '../assets/reacoes/mii-frustrado.png';
+import miiTranquilo from '../assets/reacoes/mii-tranquilo.png';
+import miiAssustado from '../assets/reacoes/mii-assustado.png';
+
 let hideTimeout: number;
 let fadeTimeout: number;
 
@@ -12,13 +16,13 @@ let fadeTimeout: number;
     const miiImg = document.getElementById("miiAvatar") as HTMLImageElement;
 
     if (tipo === "frustrado" || tipo === "erro") {
-        miiImg.src = "/src/assets/reacoes/mii-frustrado.png";
-    } else if (tipo === "tranquilo") {
-        miiImg.src = "/src/assets/reacoes/mii-tranquilo.png";
+        miiImg.src = miiFrustrado;
+    } else if (tipo === "tranquilo" || tipo === "sucesso") {
+        miiImg.src = miiTranquilo;
     } else if (tipo === "assustado") {
-        miiImg.src = "/src/assets/reacoes/mii-assustado.png";
+        miiImg.src = miiAssustado; 
     } else {
-        miiImg.src = "/src/assets/reacoes/mii-normal.png";
+        miiImg.src = miiNormal;
     }
 
     document.body.classList.remove("fade-out");
@@ -36,14 +40,12 @@ document.getElementById("fecharPopup")?.addEventListener("click", async () => {
     clearTimeout(hideTimeout);
     clearTimeout(fadeTimeout);
     
-    // Anima o body inteiro para o X sumir junto
     document.body.classList.add("fade-out");
     setTimeout(async () => {
         await invoke("esconder_popup");
     }, 450);
 });
 
-// Ao iniciar, vê se já tem alguma mensagem
 async function carregarNotificacao() {
     try {
         const dados: any = await invoke("pegar_dados_notificacao");
