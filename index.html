@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Setup do Assistente</title>
+    <link rel="stylesheet" href="/src/css/global.css" />
+    <link rel="stylesheet" href="/src/css/setup.css" />
+  </head>
+  <body class="setup-body">
+    <div class="glass-card setup-card">
+        <div class="icon-header">
+            <img src="/src/assets/reacoes/mii-normal.png" alt="Mii Icon" class="mii-icon">
+        </div>
+        <h2>Configurações</h2>
+        <p class="subtitle">Personalize seu assistente local.</p>
+
+        <div class="input-group">
+            <label>Como devo te chamar?</label>
+            <input type="text" id="userName" placeholder="Lendo do sistema...">
+        </div>
+
+        <div class="input-group autostart-group">
+            <label class="checkbox-label">
+                <input type="checkbox" id="checkAutostart" class="checkbox-input">
+                Iniciar junto com o Windows (Função ainda não implementada)
+            </label>
+        </div>
+
+        <div class="tutorial-box">
+            <label class="tutorial-label">Onde me encontrar depois de salvar?</label>
+            
+            <div class="tutorial-images-container">
+                <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1" class="tutorial-img">
+                <span class="tutorial-arrow">➔</span>
+                <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2" class="tutorial-img">
+            </div>
+            
+            <p class="tutorial-desc">
+                Eu ficarei oculto na bandeja do sistema.<br>Clique no ícone com o botão direito do mouse para acessar meus comandos!
+            </p>
+        </div>
+
+        <button class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

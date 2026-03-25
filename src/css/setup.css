@@ -1,0 +1,78 @@
+.setup-body {
+    background: linear-gradient(135deg, #1e1e2f, #14141f) !important;
+    height: auto !important;
+    min-height: 100vh;
+    overflow-y: auto !important;
+    overflow-x: hidden;
+    align-items: flex-start !important;
+    padding: 40px 20px;
+}
+
+.setup-card {
+    margin: 0 auto;
+    width: 100%;
+    max-width: 380px; 
+}
+
+.autostart-group {
+    margin-top: 15px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+}
+
+.checkbox-input {
+    width: 18px;
+    height: 18px;
+}
+
+.tutorial-box {
+    background: rgba(0, 0, 0, 0.2);
+    padding: 20px 15px;
+    border-radius: 12px;
+    margin: 25px 0;
+}
+
+.tutorial-label {
+    display: block;
+    font-size: 13px;
+    color: #c0c0d0;
+    margin-bottom: 15px;
+    font-weight: 600;
+}
+
+.tutorial-images-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+}
+
+.tutorial-img {
+    width: 100%;
+    max-width: 250px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: #14141f;
+    padding: 4px;
+}
+
+.tutorial-arrow {
+    color: #7b68ee;
+    font-weight: 900;
+    font-size: 18px;
+    transform: rotate(90deg);
+}
+
+.tutorial-desc {
+    font-size: 12px;
+    color: #a0a0b0;
+    margin-bottom: 0;
+    margin-top: 15px;
+    line-height: 1.4;
+}
