@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "assistente",
+  "productName": "MiiSideKick",
   "version": "0.1.0",
   "identifier": "com.alã.assistente",
   "build": {
@@ -13,9 +13,10 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "assistente",
+        "title": "MiiSideKick",
         "width": 450,
-        "height": 750
+        "height": 750,
+        "visible": false
       }
     ],
     "security": {
