@@ -22,8 +22,10 @@ tauri = { version = "2.0.0", features = ["tray-icon"] }
 tauri-plugin-opener = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-windows = { version = "0.61", features = ["Win32_Graphics_Gdi", "Win32_Foundation"] }
 dirs = "5.0"
+
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_Graphics_Gdi", "Win32_Foundation"] }
 
 [target.'cfg(not(any(target_os = "android", target_os = "ios")))'.dependencies]
 tauri-plugin-autostart = "2"
