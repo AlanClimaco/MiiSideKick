@@ -6,11 +6,21 @@
     <link rel="stylesheet" href="/src/css/notificacao.css" />
 </head>
 <body class="notificacao-body">
-    <button class="btn-fechar" id="fecharPopup">✕</button>
+    <button class="btn-fechar" id="fecharPopup" title="Fechar">✕</button>
 
     <div class="container" id="container">
-        <div class="balao" id="mensagem">Processando...</div>
-        <img src="/src/assets/reacoes/mii-normal.png" class="mii" id="miiAvatar">
+        <div class="conteudo-mensagem">
+            <div class="balao" id="balaoContainer">
+                <div id="mensagem">Processando...</div>
+                <div class="referencia-container" id="referenciaContainer" style="display: none;">
+                    <button class="btn-link-referencia" id="btnLinkReferencia">
+                        <span id="labelLinkReferencia">Documentação</span> ↗
+                    </button>
+                </div>
+            </div>
+            <button class="btn-responder" id="btnResponder">Responder</button>
+        </div>
+        <img src="/src/assets/reacoes/mii-normal.png" class="mii" id="miiAvatar" alt="Mii">
     </div>
     
     <script type="module" src="/src/notificacao/notificacao.ts"></script>

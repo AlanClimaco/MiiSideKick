@@ -8,50 +8,115 @@
     <link rel="stylesheet" href="/src/css/setup.css" />
   </head>
   <body class="setup-body">
-    <div class="glass-card setup-card">
-        <div class="icon-header">
-            <img src="/src/assets/reacoes/mii-normal.png" alt="Mii Icon" class="mii-icon">
-        </div>
+    <div class="aero-window setup-card">
+      <div class="window-header">
+        <img src="/src/assets/mii.png" alt="Avatar" class="mii-icon" id="headerAvatar">
         <h2>Configurações</h2>
         <p class="subtitle">Personalize seu assistente local.</p>
+      </div>
 
+      <!-- Seção Perfil -->
+      <section class="setup-section">
+        <div class="section-title">Perfil</div>
         <div class="input-group">
-            <label>Como devo te chamar?</label>
-            <input type="text" id="userName" placeholder="Lendo do sistema...">
+          <label for="userName">Como devo te chamar?</label>
+          <input type="text" id="userName" placeholder="Lendo do sistema...">
         </div>
+      </section>
 
+      <!-- Seção Personalidade -->
+      <section class="setup-section">
+        <div class="section-title">Personalidade</div>
+        <div class="personality-grid" id="personalityContainer">
+          <button type="button" class="personality-btn active" data-personality="espelho">
+            Espelho
+          </button>
+          <button type="button" class="personality-btn" data-personality="sarcastico">
+            Sarcástico
+          </button>
+          <button type="button" class="personality-btn" data-personality="educado">
+            Educado
+          </button>
+          <button type="button" class="personality-btn" data-personality="engracado">
+            Engraçado
+          </button>
+          <button type="button" class="personality-btn" data-personality="direto">
+            Direto
+          </button>
+        </div>
+        <p class="personality-hint" id="personalityHint">
+          Espelha o tom do usuário: educado com educado; deboche afiado quando provocado.
+        </p>
+      </section>
+
+      <!-- Seção Chave de API do Gemini -->
+      <section class="setup-section">
+        <div class="section-title">Chave de API do Gemini</div>
         <div class="input-group">
-            <label for="geminiApiKey">Chave de API do Gemini</label>
+          <label for="geminiApiKey">Chave de acesso</label>
+          <div class="api-key-container">
             <input type="password" id="geminiApiKey" placeholder="Cole sua chave AIzaSy..." autocomplete="off">
-            <p class="input-hint" style="font-size: 0.8rem; margin-top: 6px; opacity: 0.85;">
-                Para conversar com o Mii, pegue sua chave gratuita no
-                <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: #64b5f6; text-decoration: underline;">Google AI Studio</a>.
-                Basta fazer login com sua conta Google e clicar em "Create API key".
-            </p>
+            <button type="button" class="btn-toggle-key" id="btnToggleApiKey" title="Mostrar ou ocultar chave" aria-label="Mostrar ou ocultar chave">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+            </button>
+          </div>
+          <p class="input-hint">
+            Para conversar com o Mii, pegue sua chave gratuita no
+            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.
+            Basta fazer login com sua conta Google e clicar em "Create API key".
+          </p>
         </div>
+      </section>
 
-        <div class="input-group autostart-group">
-            <label class="checkbox-label">
-                <input type="checkbox" id="checkAutostart" class="checkbox-input">
-                Iniciar junto com o Windows
-            </label>
+      <!-- Seção Tamanho da Resposta -->
+      <section class="setup-section">
+        <div class="section-title">Tamanho da Resposta</div>
+        <div class="input-group">
+          <label>Tamanhos pré-definidos:</label>
+          <div class="length-presets">
+            <button type="button" class="length-btn active" data-length="70">70 (Curto)</button>
+            <button type="button" class="length-btn" data-length="140">140 (Médio)</button>
+            <button type="button" class="length-btn" data-length="250">250 (Longo)</button>
+          </div>
+          <label for="limiteCaracteres" class="custom-limit-label">Ou defina um tamanho personalizado (30 a 500 caracteres):</label>
+          <div class="length-input-group">
+            <input type="number" id="limiteCaracteres" min="30" max="500" step="10" value="70" placeholder="Ex: 180" class="length-input">
+            <span class="length-unit">caracteres</span>
+          </div>
+          <p class="input-hint">Limite máximo de caracteres que o Mii usará nas respostas.</p>
         </div>
+      </section>
 
-        <div class="tutorial-box">
-            <label class="tutorial-label">Onde me encontrar depois de salvar?</label>
-            
-            <div class="tutorial-images-container">
-                <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1" class="tutorial-img">
-                <span class="tutorial-arrow">➔</span>
-                <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2" class="tutorial-img">
-            </div>
-            
-            <p class="tutorial-desc">
-                Eu ficarei oculto na bandeja do sistema.<br>Clique no ícone com o botão direito do mouse para acessar meus comandos!
-            </p>
+      <!-- Seção Inicialização do Sistema -->
+      <section class="setup-section">
+        <div class="section-title">Inicialização do Sistema</div>
+        <label class="checkbox-label" for="checkAutostart">
+          <input type="checkbox" id="checkAutostart" class="checkbox-input">
+          <span>Iniciar junto com o Windows</span>
+        </label>
+      </section>
+
+      <!-- Seção Tutorial -->
+      <div class="tutorial-box">
+        <label class="tutorial-label">Onde me encontrar depois de salvar?</label>
+        <div class="tutorial-images-container">
+          <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1" class="tutorial-img">
+          <span class="tutorial-arrow" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+          <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2" class="tutorial-img">
         </div>
+        <p class="tutorial-desc">
+          O aplicativo ficará ativo na bandeja do sistema.<br>Clique com o botão direito no ícone da bandeja para acessar os comandos.
+        </p>
+      </div>
 
-        <button class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
+      <button class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

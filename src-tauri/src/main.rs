@@ -33,7 +33,9 @@ fn main() {
             comandos::iniciar_timer,
             comandos::carregar_configuracoes,
             comandos::salvar_configuracoes,
-            comandos::perguntar_ao_mii
+            comandos::perguntar_ao_mii,
+            comandos::abrir_pergunta,
+            comandos::limpar_historico_conversa
         ])
         .setup(|app| {
             // JANELA POPUP (NOTIFICAÇÕES)
@@ -46,7 +48,7 @@ fn main() {
             let popup_url = WebviewUrl::App("notificacao.html".into());
 
             let popup_window = WebviewWindowBuilder::new(app, "popup", popup_url)
-                .inner_size(350.0, 180.0)
+                .inner_size(420.0, 240.0)
                 .decorations(false)
                 .transparent(true)
                 .resizable(false)
@@ -63,7 +65,7 @@ fn main() {
                 let size = monitor.size();
                 let window_size = popup_window
                     .outer_size()
-                    .unwrap_or(tauri::PhysicalSize::new(350, 180));
+                    .unwrap_or(tauri::PhysicalSize::new(420, 240));
                 let x = size.width.saturating_sub(window_size.width + 20);
                 let y = size.height.saturating_sub(window_size.height + 60);
                 let _ = popup_window.set_position(tauri::PhysicalPosition::new(x, y));
@@ -167,11 +169,13 @@ fn main() {
                     "quit" => std::process::exit(0),
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            let _ = window.center();
                             window.show().unwrap();
                             window.set_focus().unwrap();
                         }
                     }
                     "pergunta" => {
+                        comandos::limpar_historico_conversa();
                         if let Some(window) = app.get_webview_window("pergunta") {
                             window.show().unwrap();
                             window.set_focus().unwrap();
@@ -194,6 +198,7 @@ fn main() {
                     } = event
                     {
                         if let Some(window) = tray.app_handle().get_webview_window("main") {
+                            let _ = window.center();
                             window.show().unwrap();
                             window.set_focus().unwrap();
                         }
@@ -205,6 +210,7 @@ fn main() {
                 let args: Vec<String> = std::env::args().collect();
                 
                 if !args.contains(&"--autostart".to_string()) {
+                    let _ = main_window.center();
                     main_window.show().unwrap();
                     main_window.set_focus().unwrap();
                 }

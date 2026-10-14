@@ -15,13 +15,24 @@ pub struct UserInfo {
     pub downloads: String,
 }
 
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct NotificacaoPayload {
     pub texto: String,
     pub tipo: String,
+    pub link: Option<String>,
+    pub link_rotulo: Option<String>,
 }
 
 static ULTIMA_NOTIFICACAO: Mutex<Option<NotificacaoPayload>> = Mutex::new(None);
+static HISTORICO_CONVERSA: Mutex<Vec<serde_json::Value>> = Mutex::new(Vec::new());
+
+#[tauri::command]
+pub fn limpar_historico_conversa() {
+    if let Ok(mut hist) = HISTORICO_CONVERSA.lock() {
+        hist.clear();
+        eprintln!("[Gemini API]: Histórico de conversa limpo.");
+    }
+}
 
 #[tauri::command]
 pub fn get_system_info() -> UserInfo {
@@ -57,10 +68,18 @@ pub fn pegar_dados_notificacao() -> Option<NotificacaoPayload> {
     ULTIMA_NOTIFICACAO.lock().unwrap().clone()
 }
 
-pub fn disparar_notificacao(app: &AppHandle, texto: &str, tipo: &str) {
+pub fn disparar_notificacao(
+    app: &AppHandle,
+    texto: &str,
+    tipo: &str,
+    link: Option<String>,
+    link_rotulo: Option<String>,
+) {
     let payload = NotificacaoPayload {
         texto: texto.to_string(),
         tipo: tipo.to_string(),
+        link: link.clone(),
+        link_rotulo: link_rotulo.clone(),
     };
 
     if let Ok(mut mem) = ULTIMA_NOTIFICACAO.lock() {
@@ -74,9 +93,12 @@ pub fn disparar_notificacao(app: &AppHandle, texto: &str, tipo: &str) {
         let texto_seguro = texto.replace("'", "\\'").replace("\n", "\\n");
         let tipo_seguro = tipo.replace("'", "\\'");
 
+        let link_json = serde_json::to_string(&link).unwrap_or_else(|_| "null".to_string());
+        let rotulo_json = serde_json::to_string(&link_rotulo).unwrap_or_else(|_| "null".to_string());
+
         let script = format!(
-            "if (window.atualizarInterface) {{ window.atualizarInterface('{}', '{}'); }}",
-            texto_seguro, tipo_seguro
+            "if (window.atualizarInterface) {{ window.atualizarInterface('{}', '{}', {}, {}); }}",
+            texto_seguro, tipo_seguro, link_json, rotulo_json
         );
         let _ = janela.eval(&script);
     }
@@ -85,7 +107,7 @@ pub fn disparar_notificacao(app: &AppHandle, texto: &str, tipo: &str) {
 #[tauri::command]
 pub fn limpar_lixo_pc(app: AppHandle) {
     // AVISA IMEDIATAMENTE QUANDO COMEÇA
-    disparar_notificacao(&app, "Iniciando a faxina do sistema...", "normal");
+    disparar_notificacao(&app, "Iniciando a faxina do sistema...", "normal", None, None);
 
     std::thread::spawn(move || {
         #[cfg(target_os = "windows")]
@@ -128,10 +150,10 @@ pub fn limpar_lixo_pc(app: AppHandle) {
 
         // ATUALIZA A TELA COM O RESULTADO
         if apagados == 0 {
-            disparar_notificacao(&app, "Lixeira já estava vazia. Tudo limpo!", "frustrado");
+            disparar_notificacao(&app, "Lixeira já estava vazia. Tudo limpo!", "frustrado", None, None);
         } else {
             let msg = format!("Faxina feita!\n{} arquivos inúteis removidos.", apagados);
-            disparar_notificacao(&app, &msg, "tranquilo");
+            disparar_notificacao(&app, &msg, "tranquilo", None, None);
         }
     });
 }
@@ -439,7 +461,7 @@ fn mover_arquivo_seguro(origem: &Path, destino: &Path) -> std::io::Result<()> {
 #[tauri::command]
 pub fn organizar_downloads(app: AppHandle) {
     // Avisa que começou
-    disparar_notificacao(&app, "Iniciando organização de arquivos...", "normal");
+    disparar_notificacao(&app, "Iniciando organização de arquivos...", "normal", None, None);
 
     // Joga pra background thread para não travar a bandeja!
     std::thread::spawn(move || {
@@ -521,10 +543,10 @@ pub fn organizar_downloads(app: AppHandle) {
         std::thread::sleep(std::time::Duration::from_millis(1500));
 
         if movidos == 0 {
-            disparar_notificacao(&app, "Tudo limpo! Não havia o que organizar.", "frustrado");
+            disparar_notificacao(&app, "Tudo limpo! Não havia o que organizar.", "frustrado", None, None);
         } else {
             let msg = format!("Mágica feita!\n{} arquivos organizados.", movidos);
-            disparar_notificacao(&app, &msg, "tranquilo");
+            disparar_notificacao(&app, &msg, "tranquilo", None, None);
         }
     });
 }
@@ -537,7 +559,7 @@ pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
         format!("Ok! Te aviso em {} minutos.", minutos)
     };
 
-    disparar_notificacao(&app, &msg_inicio, "tranquilo");
+    disparar_notificacao(&app, &msg_inicio, "tranquilo", None, None);
 
     let app_clone = app.clone();
 
@@ -566,12 +588,12 @@ pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
             }
         };
 
-        disparar_notificacao(&app_clone, &msg_metade, "normal");
+        disparar_notificacao(&app_clone, &msg_metade, "normal", None, None);
 
         std::thread::sleep(std::time::Duration::from_secs(resto_segundos));
 
         let msg_final = format!("ACABOU O TEMPO!\n{}", mensagem);
-        disparar_notificacao(&app_clone, &msg_final, "assustado");
+        disparar_notificacao(&app_clone, &msg_final, "assustado", None, None);
     });
 }
 
@@ -589,10 +611,34 @@ pub fn esconder_pergunta(app: tauri::AppHandle) {
     }
 }
 
+#[tauri::command]
+pub fn abrir_pergunta(app: tauri::AppHandle) {
+    if let Some(popup) = app.get_webview_window("popup") {
+        let _ = popup.hide();
+    }
+    if let Some(pergunta) = app.get_webview_window("pergunta") {
+        let _ = pergunta.show();
+        let _ = pergunta.unminimize();
+        let _ = pergunta.set_focus();
+    }
+}
+
+fn default_personalidade() -> String {
+    "espelho".to_string()
+}
+
+fn default_limite_caracteres() -> u32 {
+    70
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct AppConfig {
     pub user_name: String,
     pub gemini_api_key: String,
+    #[serde(default = "default_personalidade")]
+    pub personalidade: String,
+    #[serde(default = "default_limite_caracteres")]
+    pub limite_caracteres: u32,
 }
 
 fn obter_caminho_config() -> Option<std::path::PathBuf> {
@@ -604,7 +650,8 @@ pub fn carregar_configuracoes() -> AppConfig {
     if let Some(caminho) = obter_caminho_config() {
         if caminho.exists() {
             if let Ok(conteudo) = fs::read_to_string(&caminho) {
-                if let Ok(cfg) = serde_json::from_str::<AppConfig>(&conteudo) {
+                if let Ok(mut cfg) = serde_json::from_str::<AppConfig>(&conteudo) {
+                    cfg.limite_caracteres = cfg.limite_caracteres.clamp(30, 500);
                     return cfg;
                 }
             }
@@ -618,11 +665,14 @@ pub fn carregar_configuracoes() -> AppConfig {
     AppConfig {
         user_name,
         gemini_api_key: String::new(),
+        personalidade: default_personalidade(),
+        limite_caracteres: default_limite_caracteres(),
     }
 }
 
 #[tauri::command]
-pub fn salvar_configuracoes(config: AppConfig) -> Result<(), String> {
+pub fn salvar_configuracoes(mut config: AppConfig) -> Result<(), String> {
+    config.limite_caracteres = config.limite_caracteres.clamp(30, 500);
     if let Some(caminho) = obter_caminho_config() {
         if let Some(pai) = caminho.parent() {
             let _ = fs::create_dir_all(pai);
@@ -639,6 +689,8 @@ pub fn salvar_configuracoes(config: AppConfig) -> Result<(), String> {
 struct GeminiResposta {
     reacao: Option<String>,
     resposta: Option<String>,
+    link: Option<String>,
+    link_rotulo: Option<String>,
 }
 
 #[derive(serde::Deserialize)]
@@ -671,13 +723,36 @@ struct GeminiApiErrorResponse {
     error: Option<GeminiApiErrorDetail>,
 }
 
+pub(crate) fn validar_reacao(reacao: Option<&str>) -> &'static str {
+    match reacao {
+        Some("normal") => "normal",
+        Some("feliz") => "feliz",
+        Some("frustrado") => "frustrado",
+        Some("assustado") => "assustado",
+        Some("explicando") => "explicando",
+        Some("bocejo") => "bocejo",
+        Some("lambendo") => "lambendo",
+        _ => "normal",
+    }
+}
+
+pub(crate) fn obter_instrucao_personalidade(personalidade: &str) -> &'static str {
+    match personalidade.trim().to_lowercase().as_str() {
+        "sarcastico" => "Seja puramente sarcástico, irônico e debochado em todas as respostas. Adora dar patadas bem-humoradas e nunca abaixe a cabeça.",
+        "educado" => "Seja extremamente educado, formal, paciente, solícito e gentil, como um mordomo atencioso.",
+        "engracado" => "Seja engraçado, bem-humorado, faça piadinhas leves, trocadilhos e respostas descontraídas.",
+        "direto" => "Seja 100% sério, técnico, direto ao ponto e objetivo. Não faça piadas, enrolações ou gracinhas.",
+        _ => "Espelhe o tom do usuário: se ele for educado, seja educado; se for sarcástico, agressivo ou folgado, responda com deboche no mesmo nível.",
+    }
+}
+
 #[tauri::command]
 pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
     let app_clone = app.clone();
 
     std::thread::spawn(move || {
         // Disparo imediato do aviso inicial
-        disparar_notificacao(&app_clone, "Pensando...", "normal");
+        disparar_notificacao(&app_clone, "Pensando...", "normal", None, None);
 
         // Carrega configurações para obter chave e nome
         let config = carregar_configuracoes();
@@ -688,6 +763,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 &app_clone,
                 "Cadê minha chave de API? Configure no Setup!",
                 "frustrado",
+                None,
+                None,
             );
             return;
         }
@@ -698,13 +775,48 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             config.user_name.trim().to_string()
         };
 
+        let instrucao_tom = obter_instrucao_personalidade(&config.personalidade);
+
+        let limite_chars = config.limite_caracteres.clamp(30, 500);
+
         let system_instruction = format!(
-            "Você é o MiiSideKick, um companheiro de desktop com personalidade expressiva. O nome do usuário é: {}. Você pode usar o nome dele na resposta se fizer sentido, mas não é obrigatório. REGRAS OBRIGATÓRIAS:\n\
-            1. Espelhe o tom do usuário: se ele for grosseiro, sarcástico ou agressivo, responda no mesmo nível de deboche e grosseria; se for educado, seja educado e prestativo; se for engraçado, seja engraçado.\n\
-            2. Tamanho máximo estrito: sua resposta DEVE ter no máximo 70 caracteres. Seja direto e conciso.\n\
-            3. Retorne ESTRITAMENTE um JSON válido no seguinte formato, sem blocos de código markdown: {{\"reacao\": \"normal\" | \"tranquilo\" | \"frustrado\", \"resposta\": \"texto de ate 70 chars\"}}",
-            user_name
+            "Você é o MiiSideKick, um companheiro de desktop com personalidade expressiva. O nome do usuário é: {}. Você pode usar o nome dele na resposta se fizer sentido, mas não é obrigatório.\n\
+            AUTORIA E CRIADOR:\n\
+            Seu criador e desenvolvedor é Alan Clímaco (portfólio: https://alanclimaco.github.io/Portfolio/). Se o usuário perguntar quem te criou, quem é seu desenvolvedor ou pedir seus projetos, mencione Alan Clímaco e forneça a URL do portfólio dele no campo 'link' com o rótulo 'Portfólio de Alan Clímaco'.\n\
+            REFERÊNCIAS EXTERNAS:\n\
+            Para perguntas complexas ou técnicas que exijam aprofundamento (como programação, Git, documentações oficiais), dê uma resposta resumida dentro do limite de caracteres e adicione a URL oficial útil no campo 'link' e o nome da fonte no campo 'link_rotulo'. Se não for necessária referência externa, deixe 'link' e 'link_rotulo' como null.\n\
+            REGRAS OBRIGATÓRIAS:\n\
+            1. {}\n\
+            2. Tamanho máximo estrito: sua resposta DEVE ter no máximo {} caracteres. Seja direto e conciso. A URL e o rótulo do link NÃO contam no limite de caracteres da resposta.\n\
+            3. Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto>\", \"link\": \"<url_ou_null>\", \"link_rotulo\": \"<rotulo_curto_ou_null>\"}} sem blocos de código markdown ou texto extra.\n\
+            4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 7 opções):\n\
+               - \"normal\": respostas neutras, simples e diretas.\n\
+               - \"feliz\": agradecimentos, elogios, gentileza e bom humor.\n\
+               - \"frustrado\": broncas, irritação, respostas ríspidas ou quando o usuário for chato.\n\
+               - \"assustado\": perguntas bizarras, chocantes ou absurdas.\n\
+               - \"explicando\": quando estiver ensinando ou explicando como algo funciona.\n\
+               - \"bocejo\": tédio, preguiça, assuntos desinteressantes ou perguntas repetitivas/bobas.\n\
+               - \"lambendo\": deboche provocador (retrucando insultos do usuário com marra) ou quando o assunto for comida gostosa.",
+            user_name,
+            instrucao_tom,
+            limite_chars
         );
+
+        let user_turn = serde_json::json!({
+            "role": "user",
+            "parts": [
+                { "text": &pergunta }
+            ]
+        });
+
+        let mut contents_array = Vec::new();
+        if let Ok(hist) = HISTORICO_CONVERSA.lock() {
+            let start = hist.len().saturating_sub(4);
+            for item in hist.iter().skip(start) {
+                contents_array.push(item.clone());
+            }
+        }
+        contents_array.push(user_turn.clone());
 
         let url = format!(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={}",
@@ -712,14 +824,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         );
 
         let payload = serde_json::json!({
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [
-                        { "text": pergunta }
-                    ]
-                }
-            ],
+            "contents": contents_array,
             "systemInstruction": {
                 "parts": [
                     { "text": system_instruction }
@@ -745,7 +850,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Err(e) => {
                 let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
                 eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado");
+                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None);
                 return;
             }
         };
@@ -762,7 +867,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Err(e) => {
                 let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
                 eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado");
+                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None);
                 return;
             }
         };
@@ -784,7 +889,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             let erro_limpo = erro_msg.replace(api_key, "[CHAVE_PROTEGIDA]");
             eprintln!("[Gemini API Erro {}]: {}", status, erro_limpo);
             let msg = format!("Erro Gemini ({}): {}", status, erro_limpo);
-            disparar_notificacao(&app_clone, &msg, "frustrado");
+            disparar_notificacao(&app_clone, &msg, "frustrado", None, None);
             return;
         }
 
@@ -792,7 +897,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Ok(parsed) => parsed,
             Err(e) => {
                 eprintln!("[Gemini API]: Erro ao decodificar JSON da API: {:?}", e);
-                disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado");
+                disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None);
                 return;
             }
         };
@@ -802,7 +907,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             .as_ref()
             .and_then(|c| c.first())
             .and_then(|c| c.content.as_ref())
-            .and_then(|c| c.parts.as_ref())
+            .and_then(|p| p.parts.as_ref())
             .and_then(|p| p.first())
             .and_then(|p| p.text.as_ref())
             .map(|s| s.trim())
@@ -810,7 +915,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
         if raw_text.is_empty() {
             eprintln!("[Gemini API]: Resposta vazia ou bloqueada");
-            disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado");
+            disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None);
             return;
         }
 
@@ -825,6 +930,21 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             raw_text
         };
 
+        // Salva os turnos no histórico recente
+        if let Ok(mut hist) = HISTORICO_CONVERSA.lock() {
+            hist.push(user_turn);
+            hist.push(serde_json::json!({
+                "role": "model",
+                "parts": [
+                    { "text": clean_json }
+                ]
+            }));
+            if hist.len() > 6 {
+                let excesso = hist.len() - 6;
+                hist.drain(0..excesso);
+            }
+        }
+
         let gemini_resultado: GeminiResposta = match serde_json::from_str(clean_json) {
             Ok(res) => res,
             Err(e) => {
@@ -832,27 +952,35 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 GeminiResposta {
                     reacao: Some("normal".to_string()),
                     resposta: Some(raw_text.to_string()),
+                    link: None,
+                    link_rotulo: None,
                 }
             }
         };
 
-        let reacao = match gemini_resultado.reacao.as_deref() {
-            Some("frustrado") => "frustrado",
-            Some("tranquilo") => "tranquilo",
-            Some("assustado") => "assustado",
-            _ => "normal",
-        };
+        let reacao = validar_reacao(gemini_resultado.reacao.as_deref());
 
         let mut resposta = gemini_resultado
             .resposta
             .unwrap_or_else(|| "Hmm, não sei o que dizer...".to_string());
 
-        if resposta.chars().count() > 70 {
-            resposta = resposta.chars().take(67).collect::<String>() + "...";
+        let limite = limite_chars as usize;
+        if resposta.chars().count() > limite {
+            let slice_len = if limite > 3 { limite - 3 } else { limite };
+            resposta = resposta.chars().take(slice_len).collect::<String>() + "...";
         }
 
-        eprintln!("[Gemini API]: Notificação disparada com humor '{}': {}", reacao, resposta);
-        disparar_notificacao(&app_clone, &resposta, reacao);
+        eprintln!(
+            "[Gemini API]: Notificação disparada com humor '{}' (link: {:?}): {}",
+            reacao, gemini_resultado.link, resposta
+        );
+        disparar_notificacao(
+            &app_clone,
+            &resposta,
+            reacao,
+            gemini_resultado.link,
+            gemini_resultado.link_rotulo,
+        );
     });
 }
 
@@ -1304,9 +1432,12 @@ mod tests {
         let _ = fs::create_dir_all(&tmp_dir);
         let cfg_file = tmp_dir.join("config.json");
 
+        // 1. Serialização com personalidade e limite_caracteres explícitos
         let config = AppConfig {
             user_name: "Alan".to_string(),
             gemini_api_key: "AIzaSyTest123".to_string(),
+            personalidade: "sarcastico".to_string(),
+            limite_caracteres: 140,
         };
 
         let json = serde_json::to_string_pretty(&config).unwrap();
@@ -1315,22 +1446,47 @@ mod tests {
         let lida: AppConfig = serde_json::from_str(&fs::read_to_string(&cfg_file).unwrap()).unwrap();
         assert_eq!(lida.user_name, "Alan");
         assert_eq!(lida.gemini_api_key, "AIzaSyTest123");
+        assert_eq!(lida.personalidade, "sarcastico");
+        assert_eq!(lida.limite_caracteres, 140);
+
+        // 2. Desserialização de JSON legado sem os campos personalidade e limite_caracteres (deve usar defaults)
+        let json_legado = r#"{"user_name": "Climaco", "gemini_api_key": "AIzaSyLegacyKey"}"#;
+        let lida_legada: AppConfig = serde_json::from_str(json_legado).unwrap();
+        assert_eq!(lida_legada.user_name, "Climaco");
+        assert_eq!(lida_legada.gemini_api_key, "AIzaSyLegacyKey");
+        assert_eq!(lida_legada.personalidade, "espelho");
+        assert_eq!(lida_legada.limite_caracteres, 70);
 
         let _ = fs::remove_dir_all(&tmp_dir);
     }
 
     #[test]
+    fn test_obter_instrucao_personalidade() {
+        assert!(obter_instrucao_personalidade("espelho").contains("Espelhe o tom"));
+        assert!(obter_instrucao_personalidade("sarcastico").contains("puramente sarcástico"));
+        assert!(obter_instrucao_personalidade("educado").contains("extremamente educado"));
+        assert!(obter_instrucao_personalidade("engracado").contains("engraçado"));
+        assert!(obter_instrucao_personalidade("direto").contains("100% sério"));
+        // Fallback para valor desconhecido
+        assert!(obter_instrucao_personalidade("desconhecido").contains("Espelhe o tom"));
+    }
+
+    #[test]
     fn test_gemini_resposta_parsing() {
-        let json_valido = r#"{"reacao": "tranquilo", "resposta": "E aí Alan! Tudo certo?"}"#;
+        let json_valido = r#"{"reacao": "tranquilo", "resposta": "E aí Alan! Tudo certo?", "link": "https://alanclimaco.github.io/Portfolio/", "link_rotulo": "Portfólio de Alan Clímaco"}"#;
         let res: GeminiResposta = serde_json::from_str(json_valido).unwrap();
         assert_eq!(res.reacao.as_deref(), Some("tranquilo"));
         assert_eq!(res.resposta.as_deref(), Some("E aí Alan! Tudo certo?"));
+        assert_eq!(res.link.as_deref(), Some("https://alanclimaco.github.io/Portfolio/"));
+        assert_eq!(res.link_rotulo.as_deref(), Some("Portfólio de Alan Clímaco"));
 
         let json_com_bloco = "```json\n{\"reacao\": \"frustrado\", \"resposta\": \"Nem te conto!\"}\n```";
         let limpo = json_com_bloco.trim().trim_start_matches("```json").trim_end_matches("```").trim();
         let res2: GeminiResposta = serde_json::from_str(limpo).unwrap();
         assert_eq!(res2.reacao.as_deref(), Some("frustrado"));
         assert_eq!(res2.resposta.as_deref(), Some("Nem te conto!"));
+        assert_eq!(res2.link, None);
+        assert_eq!(res2.link_rotulo, None);
     }
 
     #[test]
@@ -1369,6 +1525,45 @@ mod tests {
         let safety = payload["safetySettings"].as_array().unwrap();
         assert_eq!(safety.len(), 4);
         assert!(safety.iter().all(|s| s["threshold"] == "BLOCK_NONE"));
+    }
+
+    #[test]
+    fn test_validar_reacao_7_opcoes_e_fallback() {
+        // Validação das 7 reações oficiais suportadas
+        assert_eq!(validar_reacao(Some("normal")), "normal");
+        assert_eq!(validar_reacao(Some("feliz")), "feliz");
+        assert_eq!(validar_reacao(Some("frustrado")), "frustrado");
+        assert_eq!(validar_reacao(Some("assustado")), "assustado");
+        assert_eq!(validar_reacao(Some("explicando")), "explicando");
+        assert_eq!(validar_reacao(Some("bocejo")), "bocejo");
+        assert_eq!(validar_reacao(Some("lambendo")), "lambendo");
+
+        // "sentado" removido do catálogo oficial deve cair no fallback para "normal"
+        assert_eq!(validar_reacao(Some("sentado")), "normal");
+
+        // Fallback para valores desconhecidos, vazios ou nulos
+        assert_eq!(validar_reacao(Some("desconhecido")), "normal");
+        assert_eq!(validar_reacao(Some("tranquilo")), "normal");
+        assert_eq!(validar_reacao(Some("")), "normal");
+        assert_eq!(validar_reacao(None), "normal");
+    }
+
+    #[test]
+    fn test_historico_conversa_e_clamp_limite() {
+        // Testa o clamp de limite_caracteres
+        assert_eq!((10u32).clamp(30, 500), 30);
+        assert_eq!((70u32).clamp(30, 500), 70);
+        assert_eq!((999u32).clamp(30, 500), 500);
+
+        // Testa limpar_historico_conversa
+        if let Ok(mut hist) = HISTORICO_CONVERSA.lock() {
+            hist.push(serde_json::json!({"role": "user", "parts": [{"text": "teste"}]}));
+            assert!(!hist.is_empty());
+        }
+        limpar_historico_conversa();
+        if let Ok(hist) = HISTORICO_CONVERSA.lock() {
+            assert!(hist.is_empty());
+        }
     }
 }
 

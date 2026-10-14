@@ -16,7 +16,8 @@
         "title": "MiiSideKick",
         "width": 450,
         "height": 750,
-        "visible": false
+        "visible": false,
+        "center": true
       }
     ],
     "security": {
