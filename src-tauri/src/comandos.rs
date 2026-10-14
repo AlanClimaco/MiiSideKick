@@ -661,6 +661,16 @@ struct GeminiResponse {
     candidates: Option<Vec<GeminiCandidate>>,
 }
 
+#[derive(serde::Deserialize)]
+struct GeminiApiErrorDetail {
+    message: Option<String>,
+}
+
+#[derive(serde::Deserialize)]
+struct GeminiApiErrorResponse {
+    error: Option<GeminiApiErrorDetail>,
+}
+
 #[tauri::command]
 pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
     let app_clone = app.clone();
@@ -697,7 +707,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         );
 
         let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={}",
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={}",
             api_key
         );
 
@@ -733,7 +743,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         {
             Ok(c) => c,
             Err(e) => {
-                eprintln!("[Gemini API Falha de Rede]: {:?}", e);
+                let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
+                eprintln!("[Gemini API Falha de Rede]: {}", err_str);
                 disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado");
                 return;
             }
@@ -749,7 +760,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         {
             Ok(r) => r,
             Err(e) => {
-                eprintln!("[Gemini API Falha de Rede]: {:?}", e);
+                let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
+                eprintln!("[Gemini API Falha de Rede]: {}", err_str);
                 disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado");
                 return;
             }
@@ -758,8 +770,20 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         if !response.status().is_success() {
             let status = response.status();
             let erro_body = response.text().unwrap_or_default();
-            eprintln!("[Gemini API Erro {}]: {}", status, erro_body);
-            let msg = format!("Erro Gemini ({})", status);
+            let erro_msg = serde_json::from_str::<GeminiApiErrorResponse>(&erro_body)
+                .ok()
+                .and_then(|r| r.error)
+                .and_then(|e| e.message)
+                .unwrap_or_else(|| {
+                    if erro_body.trim().is_empty() {
+                        "Sem detalhes do erro".to_string()
+                    } else {
+                        erro_body.clone()
+                    }
+                });
+            let erro_limpo = erro_msg.replace(api_key, "[CHAVE_PROTEGIDA]");
+            eprintln!("[Gemini API Erro {}]: {}", status, erro_limpo);
+            let msg = format!("Erro Gemini ({}): {}", status, erro_limpo);
             disparar_notificacao(&app_clone, &msg, "frustrado");
             return;
         }
