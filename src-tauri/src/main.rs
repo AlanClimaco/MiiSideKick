@@ -9,6 +9,12 @@ use tauri::{
 };
 
 fn main() {
+    #[cfg(target_os = "linux")]
+    {
+        // Previne crash de EGL_NOT_INITIALIZED com WebKitGTK no Linux
+        std::env::set_var("WEBKIT_DISABLE_DMABUF_RENDERER", "1");
+    }
+
     tauri::Builder::default()
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
@@ -20,10 +26,14 @@ fn main() {
             comandos::esconder_janela,
             comandos::esconder_popup,
             comandos::esconder_timer,
+            comandos::esconder_pergunta,
             comandos::limpar_lixo_pc,
             comandos::pegar_dados_notificacao,
             comandos::organizar_downloads,
-            comandos::iniciar_timer
+            comandos::iniciar_timer,
+            comandos::carregar_configuracoes,
+            comandos::salvar_configuracoes,
+            comandos::perguntar_ao_mii
         ])
         .setup(|app| {
             // JANELA POPUP (NOTIFICAÇÕES)
@@ -92,9 +102,44 @@ fn main() {
                 let _ = timer_window.set_position(tauri::PhysicalPosition::new(x, y));
             }
 
+            // JANELA PERGUNTA (CONVERSAR COM O MII)
+
+            #[cfg(debug_assertions)]
+            let pergunta_url = WebviewUrl::External(
+                tauri::Url::parse("http://localhost:1420/pergunta.html").unwrap(),
+            );
+            #[cfg(not(debug_assertions))]
+            let pergunta_url = WebviewUrl::App("pergunta.html".into());
+
+            let pergunta_window = WebviewWindowBuilder::new(
+                app, "pergunta", // ID da janela de pergunta
+                pergunta_url,
+            )
+            .inner_size(360.0, 180.0)
+            .decorations(false)
+            .transparent(true)
+            .resizable(false)
+            .shadow(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible(false)
+            .build()?;
+
+            if let Ok(Some(monitor)) = pergunta_window.primary_monitor() {
+                let size = monitor.size();
+                let window_size = pergunta_window
+                    .outer_size()
+                    .unwrap_or(tauri::PhysicalSize::new(360, 180));
+                let x = size.width.saturating_sub(window_size.width + 20);
+                let y = size.height.saturating_sub(window_size.height + 60);
+                let _ = pergunta_window.set_position(tauri::PhysicalPosition::new(x, y));
+            }
+
             // CONFIGURAÇÃO DA BANDEJA DO SISTEMA
 
             let show_i = MenuItem::with_id(app, "show", "⚙️ Abrir Setup", true, None::<&str>)?;
+            let pergunta_i =
+                MenuItem::with_id(app, "pergunta", "💬 Conversar com o Mii", true, None::<&str>)?;
             let timer_i = MenuItem::with_id(app, "timer", "⏱️ Novo Lembrete", true, None::<&str>)?;
             let organiza_i =
                 MenuItem::with_id(app, "organiza", "📁 Organizar Arquivos", true, None::<&str>)?;
@@ -102,8 +147,17 @@ fn main() {
                 MenuItem::with_id(app, "faxina", "🧹 Limpar Lixo do PC", true, None::<&str>)?;
             let quit_i = MenuItem::with_id(app, "quit", "❌ Sair", true, None::<&str>)?;
 
-            let menu =
-                Menu::with_items(app, &[&show_i, &timer_i, &organiza_i, &faxina_i, &quit_i])?;
+            let menu = Menu::with_items(
+                app,
+                &[
+                    &show_i,
+                    &pergunta_i,
+                    &timer_i,
+                    &organiza_i,
+                    &faxina_i,
+                    &quit_i,
+                ],
+            )?;
 
             let _tray = TrayIconBuilder::new()
                 .menu(&menu)
@@ -113,6 +167,12 @@ fn main() {
                     "quit" => std::process::exit(0),
                     "show" => {
                         if let Some(window) = app.get_webview_window("main") {
+                            window.show().unwrap();
+                            window.set_focus().unwrap();
+                        }
+                    }
+                    "pergunta" => {
+                        if let Some(window) = app.get_webview_window("pergunta") {
                             window.show().unwrap();
                             window.set_focus().unwrap();
                         }

@@ -29,6 +29,7 @@ export default defineConfig(async () => ({
         main: "index.html",
         popup: "notificacao.html", 
         timer: "timer.html",
+        pergunta: "pergunta.html",
       },
     },
   },

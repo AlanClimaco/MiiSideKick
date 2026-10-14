@@ -14,3 +14,4 @@ Thumbs.db
 src-tauri/target/
 src-tauri/gen/schemas/
 /target/
+src-tauri/gen
