@@ -1,264 +1,283 @@
-/* Estética Windows 7 Frutiger Aero */
-
-* {
+/* Frutiger Aero: vidro celeste e controles classicos do Windows 7. */
+.setup-body,
+.setup-body *,
+.setup-body *::before,
+.setup-body *::after {
     box-sizing: border-box;
-    font-family: "Segoe UI", Tahoma, sans-serif;
-}
-
-/* Custom Scrollbar Aero */
-::-webkit-scrollbar {
-    width: 8px;
-}
-
-::-webkit-scrollbar-track {
-    background: rgba(15, 25, 40, 0.6);
-}
-
-::-webkit-scrollbar-thumb {
-    background: linear-gradient(180deg, rgba(120, 180, 230, 0.5), rgba(70, 130, 190, 0.6));
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(180deg, rgba(140, 200, 255, 0.7), rgba(90, 150, 220, 0.8));
-    box-shadow: 0 0 6px rgba(0, 180, 255, 0.5);
+    font-family: "Segoe UI", sans-serif;
 }
 
 .setup-body {
-    background: radial-gradient(circle at 50% 10%, #1e3a5f, #102136 50%, #0a1422 100%) !important;
-    height: auto !important;
+    --aero-text: #142838;
+    --aero-label: #2a4c68;
+    --aero-border: #8db4d0;
+    --aero-focus: #2672ec;
+    --aero-relief: 0 1px 0 rgba(255, 255, 255, 0.8);
+    margin: 0;
+    padding: 22px 14px;
+    height: auto;
     min-height: 100vh;
-    overflow-y: auto !important;
-    overflow-x: hidden;
     display: flex;
     justify-content: center;
-    align-items: flex-start !important;
-    padding: 24px 16px;
-    color: #ffffff;
+    align-items: flex-start;
+    overflow-x: hidden;
+    overflow-y: auto;
+    color: var(--aero-text);
+    color-scheme: light;
+    background: linear-gradient(180deg, rgba(235, 246, 255, 0.88) 0%, rgba(205, 230, 250, 0.82) 40%, rgba(180, 215, 245, 0.90) 100%);
+    background-attachment: fixed;
+    scrollbar-width: thin;
+    scrollbar-color: #95bad5 #e3f1fb;
 }
 
-/* Janela Aero Glass */
+.setup-body::-webkit-scrollbar {
+    width: 9px;
+}
+
+.setup-body::-webkit-scrollbar-track {
+    background: #e3f1fb;
+}
+
+.setup-body::-webkit-scrollbar-thumb {
+    background: linear-gradient(to right, #d9ecf9, #95bad5);
+    border: 1px solid #81a9c6;
+    border-radius: 5px;
+}
+
+.setup-body::-webkit-scrollbar-thumb:hover {
+    background: #a6d2ee;
+}
+
 .aero-window.setup-card {
-    margin: 0 auto;
     width: 100%;
     max-width: 440px;
-    background: linear-gradient(180deg, rgba(35, 55, 80, 0.72) 0%, rgba(18, 30, 48, 0.86) 100%);
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 10px;
-    padding: 26px 22px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 12px 35px rgba(0, 0, 0, 0.5);
+    min-width: 0;
+    margin: 0 auto;
+    padding: 24px 20px 20px;
+    background: linear-gradient(180deg, rgba(235, 246, 255, 0.88) 0%, rgba(205, 230, 250, 0.82) 40%, rgba(180, 215, 245, 0.90) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    border-radius: 12px;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 1), inset 0 0 0 1px rgba(107, 157, 196, 0.22), 0 10px 30px rgba(0, 40, 80, 0.2);
     text-align: center;
 }
 
 .window-header {
-    margin-bottom: 20px;
+    margin-bottom: 22px;
+    text-shadow: var(--aero-relief);
 }
 
 .window-header img.mii-icon {
-    width: 68px;
-    height: 68px;
-    border-radius: 14px;
+    display: block;
+    width: 76px;
+    height: 76px;
+    margin: 0 auto 12px;
+    padding: 3px;
     object-fit: cover;
-    margin-bottom: 8px;
-    border: 2px solid rgba(255, 255, 255, 0.45);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.6);
-    background: rgba(10, 20, 35, 0.5);
+    background: linear-gradient(to bottom, #e9f7ff, #a8d6f5);
+    border: 3px solid rgba(255, 255, 255, 0.78);
+    border-radius: 10px;
+    box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 0 1px rgba(105, 154, 192, 0.55), 0 4px 10px rgba(0, 20, 50, 0.18);
 }
 
 .setup-card h2 {
+    margin: 0 0 5px;
+    color: var(--aero-text);
     font-size: 24px;
-    font-weight: 700;
-    margin: 0 0 4px 0;
-    color: #ffffff;
-    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+    font-weight: 600;
+    line-height: 1.25;
+    text-shadow: var(--aero-relief);
 }
 
 .setup-card .subtitle {
-    color: #b0c4de;
+    margin: 0;
+    color: var(--aero-label);
     font-size: 13px;
-    margin-bottom: 0;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    line-height: 1.5;
+    text-shadow: var(--aero-relief);
 }
 
-/* Seções Modulares Aero */
 .setup-section {
+    margin-bottom: 14px;
+    padding: 14px;
     text-align: left;
-    margin-bottom: 16px;
-    background: rgba(10, 20, 35, 0.45);
-    border: 1px solid rgba(255, 255, 255, 0.14);
-    border-radius: 6px;
-    padding: 14px 14px 12px 14px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.15), 0 2px 6px rgba(0, 0, 0, 0.25);
-    transition: all 0.2s ease;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.68), rgba(241, 249, 255, 0.44));
+    border: 1px solid rgba(125, 168, 202, 0.5);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 1px 2px rgba(51, 100, 139, 0.08);
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
 
 .setup-section:focus-within {
-    border-color: rgba(100, 200, 255, 0.5);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 0 10px rgba(56, 189, 248, 0.2);
+    border-color: #72b2dc;
+    box-shadow: inset 0 1px 0 #ffffff, 0 0 8px rgba(100, 181, 246, 0.22);
 }
 
 .section-title {
+    margin-bottom: 11px;
+    padding-bottom: 7px;
+    color: var(--aero-label);
+    border-bottom: 1px solid rgba(125, 168, 202, 0.3);
     font-size: 12px;
     font-weight: 700;
+    letter-spacing: 0.5px;
     text-transform: uppercase;
-    letter-spacing: 0.6px;
-    color: #d0e2f5;
-    margin-bottom: 10px;
-    padding-bottom: 6px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    text-shadow: var(--aero-relief);
 }
 
 .setup-section .input-group {
     margin-bottom: 0;
+    text-align: left;
 }
 
-.setup-section label {
+.setup-section label,
+.custom-limit-label {
     display: block;
-    font-size: 12px;
-    color: #c4d6eb;
     margin-bottom: 6px;
+    color: var(--aero-label);
+    font-size: 12px;
     font-weight: 600;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    line-height: 1.5;
+    text-shadow: var(--aero-relief);
 }
 
-/* Inputs Aero */
-input[type="text"],
-input[type="password"],
-input[type="number"] {
+.setup-card input[type="text"],
+.setup-card input[type="password"],
+.setup-card input[type="number"] {
     width: 100%;
-    background: rgba(8, 16, 28, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    color: #ffffff;
-    padding: 8px 12px;
-    border-radius: 4px;
+    min-width: 0;
+    min-height: 36px;
+    padding: 8px 10px;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid var(--aero-border);
+    border-radius: 5px;
+    color: var(--aero-text);
     font-size: 13px;
+    line-height: 18px;
+    box-shadow: inset 0 1px 2px rgba(20, 50, 75, 0.13), 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.setup-card input::placeholder {
+    color: #596f81;
+    opacity: 1;
+}
+
+.setup-card input[type="text"]:focus,
+.setup-card input[type="password"]:focus,
+.setup-card input[type="number"]:focus {
     outline: none;
-    transition: all 0.2s ease;
-    box-sizing: border-box;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+    background: #ffffff;
+    border-color: var(--aero-focus);
+    box-shadow: inset 0 1px 2px rgba(20, 50, 75, 0.1), 0 0 0 2px rgba(100, 181, 246, 0.3), 0 0 8px rgba(100, 181, 246, 0.4);
 }
 
-input[type="text"]:focus,
-input[type="password"]:focus,
-input[type="number"]:focus {
-    border-color: #38bdf8;
-    background: rgba(12, 24, 40, 0.9);
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6), inset 0 1px 2px rgba(0, 0, 0, 0.4);
-}
-
-.input-hint {
+.input-hint,
+.tutorial-desc {
+    margin: 8px 0 0;
+    color: #36576f;
     font-size: 11.5px;
-    color: #9ab4cf;
-    margin-top: 8px;
-    margin-bottom: 0;
-    line-height: 1.4;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
+    line-height: 1.5;
+    text-shadow: var(--aero-relief);
+    overflow-wrap: anywhere;
 }
 
 .input-hint a {
-    color: #60a5fa;
+    color: #145b92;
     text-decoration: underline;
-    transition: color 0.15s ease;
+    text-underline-offset: 2px;
 }
 
 .input-hint a:hover {
-    color: #93c5fd;
+    color: #0b4170;
 }
 
-/* Visualizador de Chave de API */
 .api-key-container {
     display: flex;
-    gap: 6px;
     align-items: stretch;
+    gap: 6px;
+}
+
+.personality-btn,
+.length-btn,
+.btn-toggle-key {
+    padding: 8px 10px;
+    background: linear-gradient(to bottom, #ffffff 0%, #e2f0fc 50%, #cce5f8 51%, #dff0fd 100%);
+    border: 1px solid #7eaacb;
+    border-radius: 6px;
+    color: #18354c;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 18px;
+    text-align: center;
+    text-shadow: var(--aero-relief);
+    box-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 1px 2px rgba(35, 83, 120, 0.14);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.personality-btn:hover,
+.length-btn:hover,
+.btn-toggle-key:hover {
+    background: linear-gradient(to bottom, #ffffff 0%, #d7f1ff 50%, #b6e0fa 51%, #d7f2ff 100%);
+    border-color: #559bd0;
+    box-shadow: inset 0 1px 0 #ffffff, 0 0 8px rgba(50, 150, 240, 0.3);
+}
+
+.personality-btn.active,
+.length-btn.active {
+    background: linear-gradient(to bottom, #dcf0ff 0%, #9ed4fb 50%, #76beee 51%, #a4daf9 100%);
+    border-color: #2c7eb9;
+    color: #12364e;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 0 8px rgba(50, 150, 240, 0.5);
+}
+
+.personality-btn:active,
+.length-btn:active,
+.btn-toggle-key:active {
+    background: linear-gradient(to bottom, #add2ed, #d4ecfb);
+    box-shadow: inset 0 2px 3px rgba(32, 79, 114, 0.22);
 }
 
 .btn-toggle-key {
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.05) 50%, rgba(0, 0, 0, 0.12) 51%, rgba(0, 0, 0, 0.25) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 4px;
-    color: #e2e8f0;
-    width: 42px;
+    width: 38px;
+    flex-shrink: 0;
     padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 1px 2px rgba(0, 0, 0, 0.25);
-    transition: all 0.2s ease;
-    flex-shrink: 0;
 }
 
 .btn-toggle-key svg {
     display: block;
+    pointer-events: none;
 }
 
-.btn-toggle-key:hover {
-    background: linear-gradient(180deg, rgba(160, 220, 255, 0.3) 0%, rgba(90, 180, 255, 0.15) 50%, rgba(40, 140, 240, 0.25) 51%, rgba(20, 100, 200, 0.35) 100%);
-    border-color: rgba(100, 200, 255, 0.7);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 8px rgba(0, 180, 255, 0.4);
-}
-
-.btn-toggle-key:active {
-    background: rgba(10, 20, 35, 0.8);
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
-}
-
-/* Grid de Personalidade */
 .personality-grid {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 7px;
 }
 
 .personality-btn {
-    flex: 1 1 calc(33.333% - 4px);
-    min-width: 90px;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.1) 51%, rgba(0, 0, 0, 0.22) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 5px;
-    color: #e2e8f0;
-    padding: 8px 10px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
-    user-select: none;
-    text-align: center;
-}
-
-.personality-btn:hover {
-    background: linear-gradient(180deg, rgba(160, 220, 255, 0.3) 0%, rgba(90, 180, 255, 0.15) 50%, rgba(40, 140, 240, 0.22) 51%, rgba(20, 100, 200, 0.3) 100%);
-    border-color: rgba(100, 200, 255, 0.7);
-    color: #ffffff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 8px rgba(0, 180, 255, 0.4);
-}
-
-.personality-btn.active {
-    background: linear-gradient(180deg, rgba(100, 200, 255, 0.4) 0%, rgba(40, 150, 250, 0.25) 50%, rgba(20, 110, 220, 0.35) 51%, rgba(10, 80, 180, 0.5) 100%);
-    border-color: #38bdf8;
-    color: #ffffff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 10px rgba(56, 189, 248, 0.55);
+    flex: 1 1 calc(33.333% - 5px);
+    min-width: 85px;
 }
 
 .personality-hint {
-    margin-top: 8px;
-    margin-bottom: 0;
-    font-size: 11.5px;
-    color: #cbd5e1;
-    background: rgba(5, 12, 22, 0.4);
-    padding: 7px 10px;
+    margin: 10px 0 0;
+    padding: 8px 10px;
+    background: rgba(234, 247, 255, 0.7);
+    border-left: 3px solid #68acda;
     border-radius: 4px;
-    border-left: 3px solid #38bdf8;
-    line-height: 1.4;
+    color: #2a4c68;
+    font-size: 11.5px;
+    line-height: 1.5;
+    text-shadow: var(--aero-relief);
 }
 
-/* Seletor de Tamanho de Resposta */
 .length-container {
     display: flex;
     flex-direction: column;
@@ -272,43 +291,12 @@ input[type="number"]:focus {
 
 .length-btn {
     flex: 1;
-    background: linear-gradient(180deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.04) 50%, rgba(0, 0, 0, 0.1) 51%, rgba(0, 0, 0, 0.22) 100%);
-    border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 5px;
-    color: #e2e8f0;
-    padding: 7px 8px;
-    font-size: 11.5px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.7);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 1px 3px rgba(0, 0, 0, 0.25);
-    user-select: none;
-    text-align: center;
+    min-width: 0;
+    padding: 7px 6px;
 }
 
-.length-btn:hover {
-    background: linear-gradient(180deg, rgba(160, 220, 255, 0.3) 0%, rgba(90, 180, 255, 0.15) 50%, rgba(40, 140, 240, 0.22) 51%, rgba(20, 100, 200, 0.3) 100%);
-    border-color: rgba(100, 200, 255, 0.7);
-    color: #ffffff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 0 8px rgba(0, 180, 255, 0.4);
-}
-
-.length-btn.active {
-    background: linear-gradient(180deg, rgba(100, 200, 255, 0.4) 0%, rgba(40, 150, 250, 0.25) 50%, rgba(20, 110, 220, 0.35) 51%, rgba(10, 80, 180, 0.5) 100%);
-    border-color: #38bdf8;
-    color: #ffffff;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 10px rgba(56, 189, 248, 0.55);
-}
-
-.custom-limit-label {
-    font-size: 12px;
-    color: #a0c0e0;
+.setup-section .custom-limit-label {
     margin-top: 12px;
-    margin-bottom: 6px;
-    display: block;
-    font-weight: 600;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
 }
 
 .length-input-group {
@@ -317,39 +305,26 @@ input[type="number"]:focus {
     gap: 8px;
 }
 
-.length-input {
-    width: 110px !important;
+.setup-card input.length-input {
+    width: 102px;
     text-align: center;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    background: rgba(8, 16, 28, 0.75) !important;
-    border: 1px solid rgba(255, 255, 255, 0.3) !important;
-    border-radius: 4px;
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.6), 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-
-.length-input:focus {
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6), inset 0 1px 2px rgba(0, 0, 0, 0.5) !important;
+    font-weight: 600;
 }
 
 .length-unit {
+    color: var(--aero-label);
     font-size: 12px;
-    color: #94a3b8;
 }
 
-/* Checkbox Alinhado Horizontalmente */
-.checkbox-label {
-    display: inline-flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
+.setup-section .checkbox-label {
+    display: flex;
+    align-items: center;
     gap: 10px;
-    cursor: pointer;
-    white-space: nowrap !important;
+    margin: 0;
+    color: var(--aero-text);
     font-size: 13px;
-    color: #e2e8f0;
+    cursor: pointer;
     user-select: none;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
 }
 
 .checkbox-input {
@@ -357,113 +332,125 @@ input[type="number"]:focus {
     -webkit-appearance: none;
     width: 18px;
     height: 18px;
-    border: 1px solid rgba(255, 255, 255, 0.35);
-    border-radius: 4px;
-    background: rgba(8, 16, 28, 0.7);
-    cursor: pointer;
+    flex-shrink: 0;
+    margin: 0;
     display: grid;
     place-content: center;
-    transition: all 0.2s ease;
-    margin: 0;
-    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.4);
+    background: linear-gradient(to bottom, #ffffff, #e2eff9);
+    border: 1px solid #7eaacb;
+    border-radius: 3px;
+    box-shadow: inset 0 1px 2px rgba(20, 50, 75, 0.12), 0 1px 0 #ffffff;
+    cursor: pointer;
 }
 
 .checkbox-input:checked {
-    background: linear-gradient(180deg, #38bdf8, #0284c7);
-    border-color: #38bdf8;
-    box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+    background: linear-gradient(to bottom, #e9f8ff, #9bd2f2);
+    border-color: #428cc0;
 }
 
 .checkbox-input:checked::before {
-    content: "✓";
-    font-size: 12px;
-    font-weight: 800;
-    color: #ffffff;
+    content: "";
+    width: 9px;
+    height: 5px;
+    margin-top: -3px;
+    border-left: 2px solid #17527a;
+    border-bottom: 2px solid #17527a;
+    transform: rotate(-45deg);
 }
 
-.checkbox-input:focus {
-    box-shadow: 0 0 6px rgba(56, 189, 248, 0.6);
+.setup-card button:focus-visible,
+.setup-card a:focus-visible,
+.checkbox-input:focus-visible {
+    outline: 2px solid var(--aero-focus);
+    outline-offset: 3px;
 }
 
-/* Tutorial Box Aero */
 .tutorial-box {
-    background: rgba(8, 16, 28, 0.4);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    padding: 14px 12px;
-    border-radius: 6px;
     margin: 16px 0;
+    padding: 14px 12px;
     text-align: left;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.65), rgba(230, 245, 255, 0.6));
+    border: 1px solid rgba(125, 168, 202, 0.5);
+    border-radius: 8px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95);
 }
 
 .tutorial-label {
     display: block;
+    margin-bottom: 12px;
+    color: var(--aero-label);
     font-size: 12px;
-    color: #d0e2f5;
-    margin-bottom: 10px;
-    font-weight: 700;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.6);
+    font-weight: 600;
+    line-height: 1.5;
+    text-shadow: var(--aero-relief);
 }
 
 .tutorial-images-container {
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    justify-content: center;
     align-items: center;
+    gap: 8px;
 }
 
 .tutorial-img {
+    display: block;
     width: 100%;
     max-width: 260px;
-    border-radius: 4px;
-    object-fit: contain;
-    background: #091320;
+    height: auto;
     padding: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    object-fit: contain;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1px solid #a5c5dc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(39, 81, 115, 0.12);
 }
 
 .tutorial-arrow {
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #38bdf8;
+    color: #3e83b3;
 }
 
-.tutorial-desc {
-    font-size: 11.5px;
-    color: #9ab4cf;
-    margin-bottom: 0;
-    margin-top: 10px;
-    line-height: 1.4;
-    text-shadow: 0 1px 1px rgba(0, 0, 0, 0.5);
-}
-
-/* Botão Salvar Estilo Clássico Aero */
-.btn-primary {
+.setup-card .btn-primary {
     width: 100%;
-    background: linear-gradient(180deg, #5dade2 0%, #3498db 50%, #2980b9 51%, #1f618d 100%);
-    border: 1px solid #1a5276;
-    color: #ffffff;
+    min-height: 40px;
+    margin-top: 0;
     padding: 10px 18px;
+    background: linear-gradient(to bottom, #eefcff 0%, #bce9f4 49%, #83c8dc 50%, #b5e9ec 100%);
+    border: 1px solid #548fa8;
+    border-radius: 6px;
+    color: #143c50;
     font-size: 14px;
-    font-weight: 700;
-    border-radius: 5px;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 2px 6px rgba(0, 0, 0, 0.4);
-    transition: all 0.18s ease;
+    font-weight: 600;
+    line-height: 20px;
+    text-shadow: var(--aero-relief);
+    box-shadow: inset 0 1px 0 #ffffff, inset 0 0 0 1px rgba(255, 255, 255, 0.65), 0 2px 5px rgba(27, 83, 111, 0.18);
     cursor: pointer;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6);
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
 }
 
-.btn-primary:hover {
-    background: linear-gradient(180deg, #7fb3d5 0%, #5dade2 50%, #3498db 51%, #2471a3 100%);
-    border-color: #2980b9;
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 12px rgba(52, 152, 219, 0.7);
-    transform: translateY(-1px);
+.setup-card .btn-primary:hover {
+    transform: none;
+    background: linear-gradient(to bottom, #ffffff 0%, #d2f4fc 49%, #94d9e9 50%, #c6f5f2 100%);
+    border-color: #337fa6;
+    box-shadow: inset 0 1px 0 #ffffff, 0 0 10px rgba(48, 161, 208, 0.4);
 }
 
-.btn-primary:active {
-    background: linear-gradient(180deg, #1f618d 0%, #2980b9 50%, #3498db 100%);
-    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
-    transform: translateY(0);
+.setup-card .btn-primary:active {
+    transform: translateY(1px);
+    background: linear-gradient(to bottom, #91c5d7, #c6e9ec);
+    box-shadow: inset 0 2px 4px rgba(24, 79, 102, 0.25);
+}
+
+@media (max-width: 360px) {
+    .setup-body { padding: 14px 10px; }
+    .aero-window.setup-card { padding: 20px 14px 16px; }
+    .setup-section { padding: 12px; }
+    .personality-btn { min-width: 78px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .setup-body *,
+    .setup-body *::before { transition: none; }
 }

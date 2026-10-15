@@ -9,7 +9,9 @@
 </head>
 <body class="pergunta-body">
     <div class="glass-card pergunta-card">
-        <button class="btn-fechar" id="btnFechar" title="Fechar">✕</button>
+        <button class="btn-fechar" id="btnFechar" type="button" title="Fechar" aria-label="Fechar conversa">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+        </button>
 
         <div class="pergunta-header">
             <img src="/src/assets/reacoes/mii-normal.png" alt="Mii" class="pergunta-avatar">
@@ -17,8 +19,10 @@
         </div>
 
         <div class="input-container">
-            <input type="text" id="inputPergunta" placeholder="Pergunte algo ao Mii..." maxlength="150" autofocus>
-            <button class="btn-enviar" id="btnEnviar" title="Perguntar">➔</button>
+            <input type="text" id="inputPergunta" aria-label="Pergunta para o Mii" placeholder="Pergunte algo ao Mii..." maxlength="150" autofocus>
+            <button class="btn-enviar" id="btnEnviar" type="button" title="Perguntar" aria-label="Enviar pergunta">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10h12m-5-5 5 5-5 5"/></svg>
+            </button>
         </div>
     </div>
 

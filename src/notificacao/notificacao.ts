@@ -60,9 +60,14 @@ function iniciarTimerFechamento(ms: number = 3500) {
     texto: string,
     tipo: string,
     link?: string | null,
-    linkRotulo?: string | null
+    linkRotulo?: string | null,
+    podeResponder?: boolean
 ) {
     pausarTimerFechamento();
+
+    if (btnResponder) {
+        btnResponder.style.display = podeResponder === true ? "inline-flex" : "none";
+    }
 
     document.getElementById("mensagem")!.innerText = texto;
     const miiImg = document.getElementById("miiAvatar") as HTMLImageElement;
@@ -135,7 +140,7 @@ async function carregarNotificacao() {
     try {
         const dados: any = await invoke("pegar_dados_notificacao");
         if (dados && dados.texto) {
-            (window as any).atualizarInterface(dados.texto, dados.tipo, dados.link, dados.link_rotulo);
+            (window as any).atualizarInterface(dados.texto, dados.tipo, dados.link, dados.link_rotulo, dados.pode_responder);
         }
     } catch (e) {
         console.error("Erro ao carregar dados iniciais:", e);

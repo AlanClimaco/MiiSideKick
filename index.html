@@ -3,14 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Setup do Assistente</title>
+    <title>Configurações do MiiSideKick</title>
     <link rel="stylesheet" href="/src/css/global.css" />
     <link rel="stylesheet" href="/src/css/setup.css" />
   </head>
   <body class="setup-body">
     <div class="aero-window setup-card">
       <div class="window-header">
-        <img src="/src/assets/mii.png" alt="Avatar" class="mii-icon" id="headerAvatar">
+        <img src="/src/assets/mii.png" alt="Avatar do MiiSideKick" class="mii-icon" id="headerAvatar" width="76" height="76">
         <h2>Configurações</h2>
         <p class="subtitle">Personalize seu assistente local.</p>
       </div>
@@ -57,7 +57,7 @@
           <div class="api-key-container">
             <input type="password" id="geminiApiKey" placeholder="Cole sua chave AIzaSy..." autocomplete="off">
             <button type="button" class="btn-toggle-key" id="btnToggleApiKey" title="Mostrar ou ocultar chave" aria-label="Mostrar ou ocultar chave">
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
@@ -103,20 +103,20 @@
       <div class="tutorial-box">
         <label class="tutorial-label">Onde me encontrar depois de salvar?</label>
         <div class="tutorial-images-container">
-          <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1" class="tutorial-img">
+          <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1: encontre o Mii na bandeja do sistema" class="tutorial-img">
           <span class="tutorial-arrow" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </span>
-          <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2" class="tutorial-img">
+          <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2: abra o menu de comandos do Mii" class="tutorial-img">
         </div>
         <p class="tutorial-desc">
           O aplicativo ficará ativo na bandeja do sistema.<br>Clique com o botão direito no ícone da bandeja para acessar os comandos.
         </p>
       </div>
 
-      <button class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
+      <button type="button" class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

@@ -21,6 +21,26 @@ pub struct NotificacaoPayload {
     pub tipo: String,
     pub link: Option<String>,
     pub link_rotulo: Option<String>,
+    #[serde(default)]
+    pub pode_responder: bool,
+}
+
+impl NotificacaoPayload {
+    fn script_atualizacao(&self) -> String {
+        let argumentos = serde_json::to_string(&(
+            &self.texto,
+            &self.tipo,
+            &self.link,
+            &self.link_rotulo,
+            self.pode_responder,
+        ))
+        .expect("Os argumentos da notificação devem ser serializáveis");
+
+        format!(
+            "if (window.atualizarInterface) {{ window.atualizarInterface(...{}); }}",
+            argumentos
+        )
+    }
 }
 
 static ULTIMA_NOTIFICACAO: Mutex<Option<NotificacaoPayload>> = Mutex::new(None);
@@ -74,12 +94,14 @@ pub fn disparar_notificacao(
     tipo: &str,
     link: Option<String>,
     link_rotulo: Option<String>,
+    pode_responder: bool,
 ) {
     let payload = NotificacaoPayload {
         texto: texto.to_string(),
         tipo: tipo.to_string(),
         link: link.clone(),
         link_rotulo: link_rotulo.clone(),
+        pode_responder,
     };
 
     if let Ok(mut mem) = ULTIMA_NOTIFICACAO.lock() {
@@ -90,24 +112,14 @@ pub fn disparar_notificacao(
         let _ = janela.show();
         let _ = janela.unminimize();
 
-        let texto_seguro = texto.replace("'", "\\'").replace("\n", "\\n");
-        let tipo_seguro = tipo.replace("'", "\\'");
-
-        let link_json = serde_json::to_string(&link).unwrap_or_else(|_| "null".to_string());
-        let rotulo_json = serde_json::to_string(&link_rotulo).unwrap_or_else(|_| "null".to_string());
-
-        let script = format!(
-            "if (window.atualizarInterface) {{ window.atualizarInterface('{}', '{}', {}, {}); }}",
-            texto_seguro, tipo_seguro, link_json, rotulo_json
-        );
-        let _ = janela.eval(&script);
+        let _ = janela.eval(&payload.script_atualizacao());
     }
 }
 
 #[tauri::command]
 pub fn limpar_lixo_pc(app: AppHandle) {
     // AVISA IMEDIATAMENTE QUANDO COMEÇA
-    disparar_notificacao(&app, "Iniciando a faxina do sistema...", "normal", None, None);
+    disparar_notificacao(&app, "Iniciando a faxina do sistema...", "normal", None, None, false);
 
     std::thread::spawn(move || {
         #[cfg(target_os = "windows")]
@@ -150,10 +162,10 @@ pub fn limpar_lixo_pc(app: AppHandle) {
 
         // ATUALIZA A TELA COM O RESULTADO
         if apagados == 0 {
-            disparar_notificacao(&app, "Lixeira já estava vazia. Tudo limpo!", "frustrado", None, None);
+            disparar_notificacao(&app, "Lixeira já estava vazia. Tudo limpo!", "frustrado", None, None, false);
         } else {
             let msg = format!("Faxina feita!\n{} arquivos inúteis removidos.", apagados);
-            disparar_notificacao(&app, &msg, "tranquilo", None, None);
+            disparar_notificacao(&app, &msg, "tranquilo", None, None, false);
         }
     });
 }
@@ -461,7 +473,7 @@ fn mover_arquivo_seguro(origem: &Path, destino: &Path) -> std::io::Result<()> {
 #[tauri::command]
 pub fn organizar_downloads(app: AppHandle) {
     // Avisa que começou
-    disparar_notificacao(&app, "Iniciando organização de arquivos...", "normal", None, None);
+    disparar_notificacao(&app, "Iniciando organização de arquivos...", "normal", None, None, false);
 
     // Joga pra background thread para não travar a bandeja!
     std::thread::spawn(move || {
@@ -543,10 +555,10 @@ pub fn organizar_downloads(app: AppHandle) {
         std::thread::sleep(std::time::Duration::from_millis(1500));
 
         if movidos == 0 {
-            disparar_notificacao(&app, "Tudo limpo! Não havia o que organizar.", "frustrado", None, None);
+            disparar_notificacao(&app, "Tudo limpo! Não havia o que organizar.", "frustrado", None, None, false);
         } else {
             let msg = format!("Mágica feita!\n{} arquivos organizados.", movidos);
-            disparar_notificacao(&app, &msg, "tranquilo", None, None);
+            disparar_notificacao(&app, &msg, "tranquilo", None, None, false);
         }
     });
 }
@@ -559,7 +571,7 @@ pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
         format!("Ok! Te aviso em {} minutos.", minutos)
     };
 
-    disparar_notificacao(&app, &msg_inicio, "tranquilo", None, None);
+    disparar_notificacao(&app, &msg_inicio, "tranquilo", None, None, false);
 
     let app_clone = app.clone();
 
@@ -588,12 +600,12 @@ pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
             }
         };
 
-        disparar_notificacao(&app_clone, &msg_metade, "normal", None, None);
+        disparar_notificacao(&app_clone, &msg_metade, "normal", None, None, false);
 
         std::thread::sleep(std::time::Duration::from_secs(resto_segundos));
 
         let msg_final = format!("ACABOU O TEMPO!\n{}", mensagem);
-        disparar_notificacao(&app_clone, &msg_final, "assustado", None, None);
+        disparar_notificacao(&app_clone, &msg_final, "assustado", None, None, false);
     });
 }
 
@@ -752,7 +764,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
     std::thread::spawn(move || {
         // Disparo imediato do aviso inicial
-        disparar_notificacao(&app_clone, "Pensando...", "normal", None, None);
+        disparar_notificacao(&app_clone, "Pensando...", "normal", None, None, false);
 
         // Carrega configurações para obter chave e nome
         let config = carregar_configuracoes();
@@ -765,6 +777,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 "frustrado",
                 None,
                 None,
+                false,
             );
             return;
         }
@@ -850,7 +863,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Err(e) => {
                 let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
                 eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None);
+                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None, false);
                 return;
             }
         };
@@ -867,7 +880,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Err(e) => {
                 let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
                 eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None);
+                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None, false);
                 return;
             }
         };
@@ -889,7 +902,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             let erro_limpo = erro_msg.replace(api_key, "[CHAVE_PROTEGIDA]");
             eprintln!("[Gemini API Erro {}]: {}", status, erro_limpo);
             let msg = format!("Erro Gemini ({}): {}", status, erro_limpo);
-            disparar_notificacao(&app_clone, &msg, "frustrado", None, None);
+            disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false);
             return;
         }
 
@@ -897,7 +910,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Ok(parsed) => parsed,
             Err(e) => {
                 eprintln!("[Gemini API]: Erro ao decodificar JSON da API: {:?}", e);
-                disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None);
+                disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None, false);
                 return;
             }
         };
@@ -915,7 +928,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
         if raw_text.is_empty() {
             eprintln!("[Gemini API]: Resposta vazia ou bloqueada");
-            disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None);
+            disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None, false);
             return;
         }
 
@@ -980,6 +993,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             reacao,
             gemini_resultado.link,
             gemini_resultado.link_rotulo,
+            true,
         );
     });
 }
@@ -988,6 +1002,45 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 mod tests {
     use super::*;
     use std::path::PathBuf;
+
+    #[test]
+    fn test_notificacao_preserva_permissao_nos_dois_transportes() {
+        for pode_responder in [false, true] {
+            let payload = NotificacaoPayload {
+                texto: "Olá, d'água!\nC:\\Pasta\\arquivo \"citado\"".to_string(),
+                tipo: "normal".to_string(),
+                link: Some("https://example.com/?q=referencia".to_string()),
+                link_rotulo: Some("Referência".to_string()),
+                pode_responder,
+            };
+
+            // A leitura inicial pelo comando deve manter a mesma permissão do envio ao vivo.
+            let json = serde_json::to_string(&payload).unwrap();
+            let lida: NotificacaoPayload = serde_json::from_str(&json).unwrap();
+            assert_eq!(lida.pode_responder, pode_responder);
+
+            let script = payload.script_atualizacao();
+            let argumentos = script
+                .strip_prefix("if (window.atualizarInterface) { window.atualizarInterface(...")
+                .unwrap()
+                .strip_suffix("); }")
+                .unwrap();
+            let valores: serde_json::Value = serde_json::from_str(argumentos).unwrap();
+            assert_eq!(valores.as_array().unwrap().len(), 5);
+            assert_eq!(valores[0], payload.texto);
+            assert_eq!(valores[1], payload.tipo);
+            assert_eq!(valores[2], payload.link.unwrap());
+            assert_eq!(valores[3], payload.link_rotulo.unwrap());
+            assert_eq!(valores[4], pode_responder);
+        }
+    }
+
+    #[test]
+    fn test_notificacao_sem_permissao_nao_habilita_resposta() {
+        let legado = r#"{"texto":"Lembrete","tipo":"normal","link":null,"link_rotulo":null}"#;
+        let payload: NotificacaoPayload = serde_json::from_str(legado).unwrap();
+        assert!(!payload.pode_responder);
+    }
 
     #[test]
     fn test_mover_arquivo_com_timestamp() {
