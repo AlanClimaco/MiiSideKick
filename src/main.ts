@@ -18,15 +18,21 @@ let personalidadeAtual = "espelho";
 
 // Legendas explicativas para cada personalidade
 const DESC_PERSONALIDADES: Record<string, string> = {
-    espelho: "Espelha o tom do usuário: educado com educado; deboche afiado quando provocado.",
-    sarcastico: "Puramente sarcástico, irônico e debochado. Dá patadas bem-humoradas e nunca abaixa a cabeça.",
+    espelho: "Adapta o tom ao usuário alternando estritamente entre Educado, Engraçado e Sério/Direto.",
     educado: "Extremamente educado, formal, paciente e gentil, como um mordomo atencioso.",
     engracado: "Engraçado e bem-humorado. Piadinhas leves, trocadilhos e respostas descontraídas.",
     direto: "100% sério, técnico, direto ao ponto e objetivo, sem enrolações.",
+    hostil: "Agressivo, boca-suja, sem paciência e estressado. Sem papas na língua e sem filtros.",
+    manuel_gomes: "Responde como o cantor Manuel Gomes (Caneta Azul), com sabedoria do interior e canções.",
+    sarcastico: "Agressivo, boca-suja, sem paciência e estressado. Sem papas na língua e sem filtros.",
 };
 
 function selecionarPersonalidade(personalidade: string) {
-    personalidadeAtual = personalidade || "espelho";
+    let persona = personalidade || "espelho";
+    if (persona === "sarcastico") {
+        persona = "hostil";
+    }
+    personalidadeAtual = persona;
 
     personalityButtons.forEach((btn) => {
         if (btn.getAttribute("data-personality") === personalidadeAtual) {

@@ -264,6 +264,9 @@
 .personality-btn {
     flex: 1 1 calc(33.333% - 5px);
     min-width: 85px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .personality-hint {

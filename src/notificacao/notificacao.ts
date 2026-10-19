@@ -9,6 +9,7 @@ import miiAssustado from '../assets/reacoes/mii-assustado.png';
 import miiExplicando from '../assets/reacoes/mii-explicando.png';
 import miiBocejo from '../assets/reacoes/mii-bocejo.png';
 import miiLambendo from '../assets/reacoes/mii-lambendo.png';
+import bellSound from '../assets/audio/bell.wav';
 
 // Mapa das 7 reações suportadas com suporte a aliases
 const mapaAssetsReacoes: Record<string, string> = {
@@ -56,17 +57,59 @@ function iniciarTimerFechamento(ms: number = 3500) {
     }, ms);
 }
 
+function tocarSomNotificacao() {
+    const audio = new Audio(bellSound);
+    audio.play().catch(() => {});
+}
+
+interface PayloadNotificacao {
+    texto: string;
+    tipo: string;
+    link?: string | null;
+    link_rotulo?: string | null;
+    pode_responder?: boolean;
+    tocar_som?: boolean;
+}
+
 (window as any).atualizarInterface = function(
-    texto: string,
-    tipo: string,
+    textoOuPayload: string | PayloadNotificacao,
+    tipo?: string,
     link?: string | null,
     linkRotulo?: string | null,
-    podeResponder?: boolean
+    podeResponder?: boolean,
+    tocarSom?: boolean
 ) {
+    let texto: string;
+    let tipoFinal = "normal";
+    let linkFinal: string | null | undefined = null;
+    let linkRotuloFinal: string | null | undefined = null;
+    let podeResponderFinal = false;
+    let deveTocarSom = false;
+
+    if (typeof textoOuPayload === "object" && textoOuPayload !== null) {
+        texto = textoOuPayload.texto;
+        tipoFinal = textoOuPayload.tipo || "normal";
+        linkFinal = textoOuPayload.link;
+        linkRotuloFinal = textoOuPayload.link_rotulo;
+        podeResponderFinal = textoOuPayload.pode_responder === true;
+        deveTocarSom = textoOuPayload.tocar_som === true;
+    } else {
+        texto = textoOuPayload;
+        tipoFinal = tipo || "normal";
+        linkFinal = link;
+        linkRotuloFinal = linkRotulo;
+        podeResponderFinal = podeResponder === true;
+        deveTocarSom = tocarSom === true;
+    }
+
     pausarTimerFechamento();
 
+    if (deveTocarSom) {
+        tocarSomNotificacao();
+    }
+
     if (btnResponder) {
-        btnResponder.style.display = podeResponder === true ? "inline-flex" : "none";
+        btnResponder.style.display = podeResponderFinal ? "inline-flex" : "none";
     }
 
     document.getElementById("mensagem")!.innerText = texto;
@@ -79,19 +122,19 @@ function iniciarTimerFechamento(ms: number = 3500) {
     };
 
     // Troca de imagem do avatar apontando dinamicamente para a reação correspondente
-    miiImg.src = obterImagemReacao(tipo) || miiNormal;
+    miiImg.src = obterImagemReacao(tipoFinal) || miiNormal;
 
     // Gerencia link de referência externa ou autoria
     const refContainer = document.getElementById("referenciaContainer");
     const btnLink = document.getElementById("btnLinkReferencia");
     const labelLink = document.getElementById("labelLinkReferencia");
 
-    if (link && link.trim().startsWith("http")) {
+    if (linkFinal && linkFinal.trim().startsWith("http")) {
         if (refContainer && btnLink && labelLink) {
-            labelLink.innerText = linkRotulo || "Acessar Fonte";
+            labelLink.innerText = linkRotuloFinal || "Acessar Fonte";
             btnLink.onclick = (e) => {
                 e.stopPropagation();
-                openUrl(link).catch(() => window.open(link, "_blank"));
+                openUrl(linkFinal!).catch(() => window.open(linkFinal!, "_blank"));
             };
             refContainer.style.display = "flex";
         }
@@ -140,7 +183,7 @@ async function carregarNotificacao() {
     try {
         const dados: any = await invoke("pegar_dados_notificacao");
         if (dados && dados.texto) {
-            (window as any).atualizarInterface(dados.texto, dados.tipo, dados.link, dados.link_rotulo, dados.pode_responder);
+            (window as any).atualizarInterface(dados);
         }
     } catch (e) {
         console.error("Erro ao carregar dados iniciais:", e);
