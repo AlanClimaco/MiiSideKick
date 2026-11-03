@@ -13,6 +13,14 @@ const personalityHint = document.getElementById("personalityHint");
 const inputLimite = document.getElementById("limiteCaracteres") as HTMLInputElement;
 const lengthButtons = document.querySelectorAll<HTMLButtonElement>(".length-btn");
 
+// Controles de alertas proativos
+const checkAlertaLixeira = document.getElementById("checkAlertaLixeira") as HTMLInputElement;
+const checkAlertaDownloads = document.getElementById("checkAlertaDownloads") as HTMLInputElement;
+const checkAlertaBemEstar = document.getElementById("checkAlertaBemEstar") as HTMLInputElement;
+const checkAlertaCuriosidades = document.getElementById("checkAlertaCuriosidades") as HTMLInputElement;
+const frequencyButtons = document.querySelectorAll<HTMLButtonElement>(".frequency-btn");
+const frequencyHint = document.getElementById("frequencyHint");
+
 // Armazena a personalidade selecionada
 let personalidadeAtual = "espelho";
 
@@ -22,15 +30,16 @@ const DESC_PERSONALIDADES: Record<string, string> = {
     educado: "Extremamente educado, formal, paciente e gentil, como um mordomo atencioso.",
     engracado: "Engraçado e bem-humorado. Piadinhas leves, trocadilhos e respostas descontraídas.",
     direto: "100% sério, técnico, direto ao ponto e objetivo, sem enrolações.",
-    hostil: "Agressivo, boca-suja, sem paciência e estressado. Sem papas na língua e sem filtros.",
-    manuel_gomes: "Responde como o cantor Manuel Gomes (Caneta Azul), com sabedoria do interior e canções.",
-    sarcastico: "Agressivo, boca-suja, sem paciência e estressado. Sem papas na língua e sem filtros.",
+    hostil: "Humor ácido, fatalismo cômico, piadas secas e ironias históricas mordazes.",
+    sarcastico: "Humor ácido, fatalismo cômico, piadas secas e ironias históricas mordazes.",
 };
 
 function selecionarPersonalidade(personalidade: string) {
     let persona = personalidade || "espelho";
     if (persona === "sarcastico") {
         persona = "hostil";
+    } else if (persona === "manuel_gomes") {
+        persona = "espelho";
     }
     personalidadeAtual = persona;
 
@@ -52,6 +61,42 @@ personalityButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
         const personality = btn.getAttribute("data-personality") || "espelho";
         selecionarPersonalidade(personality);
+    });
+});
+
+// Frequência de alertas proativos
+let frequenciaAtual = "equilibrado";
+const DESC_FREQUENCIAS: Record<string, string> = {
+    discreto: "Intervalos maiores e alertas mais raros. Foco máximo nas suas tarefas.",
+    equilibrado: "Intervalos balanceados e lembretes amigáveis ao longo do dia.",
+    frequente: "Companhia mais ativa, com curiosidades e dicas com maior frequência.",
+};
+
+function selecionarFrequencia(freq: string) {
+    const f = (freq || "equilibrado").toLowerCase().trim();
+    if (f === "discreto" || f === "frequente") {
+        frequenciaAtual = f;
+    } else {
+        frequenciaAtual = "equilibrado";
+    }
+
+    frequencyButtons.forEach((btn) => {
+        if (btn.getAttribute("data-frequency") === frequenciaAtual) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+
+    if (frequencyHint && DESC_FREQUENCIAS[frequenciaAtual]) {
+        frequencyHint.textContent = DESC_FREQUENCIAS[frequenciaAtual];
+    }
+}
+
+frequencyButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+        const freq = btn.getAttribute("data-frequency") || "equilibrado";
+        selecionarFrequencia(freq);
     });
 });
 
@@ -100,7 +145,6 @@ if (inputLimite) {
     inputLimite.addEventListener("input", () => {
         const valor = parseInt(inputLimite.value, 10);
         if (!isNaN(valor)) {
-            // Se o valor corresponder exatamente a 70, 140 ou 250, ativa o botão; caso contrário, desativa todos sinalizando custom
             let encontrouPreset = false;
             lengthButtons.forEach((btn) => {
                 const btnValor = parseInt(btn.getAttribute("data-length") || "0", 10);
@@ -127,7 +171,7 @@ if (inputLimite) {
 
 async function carregarDadosDoPC() {
     try {
-        // 1. Carrega as configurações salvas (nome, chave Gemini, personalidade e limite)
+        // 1. Carrega as configurações salvas (nome, chave Gemini, personalidade, limite e gatilhos)
         const config: any = await invoke("carregar_configuracoes");
         if (config) {
             if (userName) userName.value = config.user_name || "";
@@ -139,6 +183,23 @@ async function carregarDadosDoPC() {
                 atualizarLimiteVisual(config.limite_caracteres);
             } else {
                 atualizarLimiteVisual(70);
+            }
+
+            // Alertas proativos
+            if (checkAlertaLixeira) {
+                checkAlertaLixeira.checked = config.alerta_lixeira !== false;
+            }
+            if (checkAlertaDownloads) {
+                checkAlertaDownloads.checked = config.alerta_downloads !== false;
+            }
+            if (checkAlertaBemEstar) {
+                checkAlertaBemEstar.checked = config.alerta_bem_estar !== false;
+            }
+            if (checkAlertaCuriosidades) {
+                checkAlertaCuriosidades.checked = config.alerta_curiosidades !== false;
+            }
+            if (config.frequencia_alertas) {
+                selecionarFrequencia(config.frequencia_alertas);
             }
         }
 
@@ -179,14 +240,19 @@ if (btnSalvar) {
     btnSalvar.addEventListener("click", async () => {
         const limiteFinal = Math.max(30, Math.min(500, parseInt(inputLimite?.value || "70", 10) || 70));
 
-        // Salva as configurações (nome, chave Gemini, personalidade e limite) no Rust
+        // Salva as configurações completas no Rust
         try {
             await invoke("salvar_configuracoes", {
                 config: {
                     user_name: userName?.value?.trim() || "Usuário",
                     gemini_api_key: geminiApiKey?.value?.trim() || "",
                     personalidade: personalidadeAtual,
-                    limite_caracteres: limiteFinal
+                    limite_caracteres: limiteFinal,
+                    alerta_lixeira: checkAlertaLixeira ? checkAlertaLixeira.checked : true,
+                    alerta_downloads: checkAlertaDownloads ? checkAlertaDownloads.checked : true,
+                    alerta_bem_estar: checkAlertaBemEstar ? checkAlertaBemEstar.checked : true,
+                    alerta_curiosidades: checkAlertaCuriosidades ? checkAlertaCuriosidades.checked : true,
+                    frequencia_alertas: frequenciaAtual
                 }
             });
         } catch (error) {

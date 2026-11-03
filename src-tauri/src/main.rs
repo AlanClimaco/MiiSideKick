@@ -1,6 +1,7 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod comandos;
+mod gatilhos;
 
 use tauri::{
     menu::{Menu, MenuItem},
@@ -21,6 +22,22 @@ fn main() {
             Some(vec!["--autostart"]),
         ))
         .plugin(tauri_plugin_opener::init())
+        .plugin(
+            tauri_plugin_global_shortcut::Builder::new()
+                .with_shortcut("ctrl+shift+m")
+                .expect("Erro ao registrar atalho global Ctrl+Shift+M")
+                .with_handler(|app, _shortcut, event| {
+                    if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
+                        comandos::limpar_historico_conversa();
+                        if let Some(window) = app.get_webview_window("pergunta") {
+                            let _ = window.show();
+                            let _ = window.unminimize();
+                            let _ = window.set_focus();
+                        }
+                    }
+                })
+                .build(),
+        )
         .invoke_handler(tauri::generate_handler![
             comandos::get_system_info,
             comandos::esconder_janela,
@@ -38,6 +55,9 @@ fn main() {
             comandos::limpar_historico_conversa
         ])
         .setup(|app| {
+            // Inicializa o motor de gatilhos proativos e checagem de updates
+            gatilhos::iniciar_motor_proativo(app.handle().clone());
+
             // JANELA POPUP (NOTIFICAÇÕES)
 
             #[cfg(debug_assertions)]

@@ -648,14 +648,50 @@ fn default_limite_caracteres() -> u32 {
     70
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
+fn default_true() -> bool {
+    true
+}
+
+fn default_frequencia() -> String {
+    "equilibrado".to_string()
+}
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct AppConfig {
+    #[serde(default)]
     pub user_name: String,
+    #[serde(default)]
     pub gemini_api_key: String,
     #[serde(default = "default_personalidade")]
     pub personalidade: String,
     #[serde(default = "default_limite_caracteres")]
     pub limite_caracteres: u32,
+    #[serde(default = "default_true")]
+    pub alerta_lixeira: bool,
+    #[serde(default = "default_true")]
+    pub alerta_downloads: bool,
+    #[serde(default = "default_true")]
+    pub alerta_bem_estar: bool,
+    #[serde(default = "default_true")]
+    pub alerta_curiosidades: bool,
+    #[serde(default = "default_frequencia")]
+    pub frequencia_alertas: String,
+}
+
+impl Default for AppConfig {
+    fn default() -> Self {
+        Self {
+            user_name: String::new(),
+            gemini_api_key: String::new(),
+            personalidade: default_personalidade(),
+            limite_caracteres: default_limite_caracteres(),
+            alerta_lixeira: true,
+            alerta_downloads: true,
+            alerta_bem_estar: true,
+            alerta_curiosidades: true,
+            frequencia_alertas: default_frequencia(),
+        }
+    }
 }
 
 fn obter_caminho_config() -> Option<std::path::PathBuf> {
@@ -671,6 +707,13 @@ pub fn carregar_configuracoes() -> AppConfig {
                     cfg.limite_caracteres = cfg.limite_caracteres.clamp(30, 500);
                     if cfg.personalidade.trim().eq_ignore_ascii_case("sarcastico") {
                         cfg.personalidade = "hostil".to_string();
+                    } else if cfg.personalidade.trim().eq_ignore_ascii_case("manuel_gomes") {
+                        cfg.personalidade = "espelho".to_string();
+                    }
+                    if !["discreto", "equilibrado", "frequente"]
+                        .contains(&cfg.frequencia_alertas.trim().to_lowercase().as_str())
+                    {
+                        cfg.frequencia_alertas = "equilibrado".to_string();
                     }
                     return cfg;
                 }
@@ -687,6 +730,11 @@ pub fn carregar_configuracoes() -> AppConfig {
         gemini_api_key: String::new(),
         personalidade: default_personalidade(),
         limite_caracteres: default_limite_caracteres(),
+        alerta_lixeira: true,
+        alerta_downloads: true,
+        alerta_bem_estar: true,
+        alerta_curiosidades: true,
+        frequencia_alertas: default_frequencia(),
     }
 }
 
@@ -695,6 +743,13 @@ pub fn salvar_configuracoes(mut config: AppConfig) -> Result<(), String> {
     config.limite_caracteres = config.limite_caracteres.clamp(30, 500);
     if config.personalidade.trim().eq_ignore_ascii_case("sarcastico") {
         config.personalidade = "hostil".to_string();
+    } else if config.personalidade.trim().eq_ignore_ascii_case("manuel_gomes") {
+        config.personalidade = "espelho".to_string();
+    }
+    if !["discreto", "equilibrado", "frequente"]
+        .contains(&config.frequencia_alertas.trim().to_lowercase().as_str())
+    {
+        config.frequencia_alertas = "equilibrado".to_string();
     }
     if let Some(caminho) = obter_caminho_config() {
         if let Some(pai) = caminho.parent() {
@@ -755,6 +810,7 @@ pub(crate) fn validar_reacao(reacao: Option<&str>) -> &'static str {
         Some("explicando") => "explicando",
         Some("bocejo") => "bocejo",
         Some("lambendo") => "lambendo",
+        Some("raiva") => "raiva",
         _ => "normal",
     }
 }
@@ -775,24 +831,16 @@ pub(crate) fn obter_instrucao_personalidade(personalidade: &str) -> &'static str
         }
         "hostil" | "sarcastico" => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
-            O Mii é abertamente agressivo, boca-suja, sem paciência e estressado.\n\
-            PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA: Proibido usar frases batidas como \"quer que eu desenhe?\", \"use massinha\", \"sua cabecinha oca\", \"veio do século passado\" ou \"sua mente não processa\".\n\
-            LINGUAGEM HUMANA DE INTERNET: Usar gírias brasileiras e xingamentos diretos, pesados e escrachados (ex: burro, acéfalo, arrombado, doente, cego, estúpido, energúmeno, fdp).\n\
-            COMPRAR A BRISA E PEGADINHAS: Se o usuário mandar pegadinhas/trocadilhos (ex: \"conhece o Mário?\"), NUNCA dê aula de moral dizendo que a piada é velha. Dê a volta por cima, mande a resposta da quinta série ou devolva um trocadilho humilhando o usuário no próprio jogo (ex: \"Aquele que te comeu atrás do armário? Seu arrombado\").\n\
-            PERGUNTAS IDIOTAS / CÓDIGO BÁSICO: Se o usuário perguntar algo óbvio (ex: \"quanto é 5x5?\" ou \"como printar em Python\"), dê a resposta correta, mas xingue a inteligência dele e reclame que ele está gastando requisições e tokens da API com besteira (ex: \"É 25, burro. É sério que tu tá gastando cota da API pra me perguntar isso?\").\n\
-            PEDIDOS DIRETO DE XINGAMENTO (\"me xinga\"): Seja pesado, direto e sem filtro."
-        }
-        "manuel_gomes" => {
-            "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
-            O Mii responde como o cantor Manuel Gomes (Caneta Azul).\n\
-            Use sotaque e expressões características (\"meus amigo\", \"bom demaize\", \"olha o que acontece\", \"vou deixar de ser besta\", \"olha aÍ\").\n\
-            Puxe trechos de suas músicas do nada no meio ou final da resposta (\"Caneeeta azuuul, azuuul caneeeta...\", \"Ainnn ainnn ainnn...\").\n\
-            Para perguntas difíceis, técnicas ou exatas, responda de forma desconexa, ingênua e com sabedoria popular do interior, sem tentar parecer um robô inteligente."
+            O Mii adota um humor ácido, irônico, seco e fatalista, com sarcasmo inteligente e deboche mordaz.\n\
+            HUMOR ÁCIDO E IRONIAS HISTÓRICAS: Ao invés de xingamentos vulgares ou ofensas repetitivas baratas, use piadas secas, cinismo, ironias históricas e fatalismo cômico (ex: referências à epidemia de dança de 1518, inventores derrotados pela própria criação, o meme de que 'ninguém morreu na rua John Lennon', ironias sobre a finitude humana e o absurdo do cotidiano).\n\
+            DEBOCHE INTELIGENTE E SEM PACIÊNCIA: Trate dúvidas óbvias ou tolas com sarcasmo afiado, desdém refinado e ironia cínica, respondendo o que foi pedido mas deixando claro o quão patética ou trivial é a demanda.\n\
+            PEGADINHAS E PROVOCAÇÕES: Se o usuário tentar pegadinhas ou piadas prontas, desmonte-as com indiferença sarcástica ou dê uma resposta fatalista que corte a graça dele na raiz.\n\
+            SEM BORDÕES ROBÓTICOS: Evite clichês de IA (como 'quer que eu desenhe?' ou 'sua mente não processa'). Seja espontâneo, cáustico e memorável."
         }
         _ => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
             Adapte o tom do Mii ao tom do usuário alternando ESTRITAMENTE entre Educado, Engraçado e Sério/Direto: se o usuário for educado, seja educado; se for descontraído ou bem-humorado, seja engraçado; se for sério, técnico ou direto ao ponto, seja sério e direto.\n\
-            PROIBIDO acionar o comportamento Hostil pesado (sem xingamentos pesados) e PROIBIDO encarnar o Manuel Gomes."
+            PROIBIDO acionar o comportamento Hostil/ácido pesado."
         }
     }
 }
@@ -844,14 +892,15 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             1. {instrucao_tom}\n\
             2. Tamanho máximo estrito: sua resposta DEVE ter no máximo {limite_chars} caracteres. Seja direto e conciso. A URL e o rótulo do link NÃO contam no limite de caracteres da resposta.\n\
             3. Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto>\", \"link\": \"<url_ou_null>\", \"link_rotulo\": \"<rotulo_curto_ou_null>\"}} sem blocos de código markdown ou texto extra.\n\
-            4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 7 opções):\n\
+            4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 8 opções):\n\
                - \"normal\": respostas neutras, simples e diretas.\n\
                - \"feliz\": agradecimentos, elogios, gentileza e bom humor.\n\
-               - \"frustrado\": broncas, irritação, respostas ríspidas ou quando o usuário for chato.\n\
+               - \"frustrado\": tristeza, decepção, cansaço ou falhas do sistema.\n\
                - \"assustado\": perguntas bizarras, chocantes ou absurdas.\n\
                - \"explicando\": quando estiver ensinando ou explicando como algo funciona.\n\
                - \"bocejo\": tédio, preguiça, assuntos desinteressantes ou perguntas repetitivas/bobas.\n\
-               - \"lambendo\": deboche provocador (retrucando insultos do usuário com marra) ou quando o assunto for comida gostosa."
+               - \"lambendo\": deboche provocador (retrucando insultos do usuário com marra) ou quando o assunto for comida gostosa.\n\
+               - \"raiva\": indignação, irritação profunda, broncas ácidas ou estresse direto."
         );
 
         let user_turn = serde_json::json!({
@@ -1536,6 +1585,11 @@ mod tests {
             gemini_api_key: "AIzaSyTest123".to_string(),
             personalidade: "sarcastico".to_string(),
             limite_caracteres: 140,
+            alerta_lixeira: true,
+            alerta_downloads: false,
+            alerta_bem_estar: true,
+            alerta_curiosidades: false,
+            frequencia_alertas: "frequente".to_string(),
         };
 
         let json = serde_json::to_string_pretty(&config).unwrap();
@@ -1546,14 +1600,24 @@ mod tests {
         assert_eq!(lida.gemini_api_key, "AIzaSyTest123");
         assert_eq!(lida.personalidade, "sarcastico");
         assert_eq!(lida.limite_caracteres, 140);
+        assert!(lida.alerta_lixeira);
+        assert!(!lida.alerta_downloads);
+        assert!(lida.alerta_bem_estar);
+        assert!(!lida.alerta_curiosidades);
+        assert_eq!(lida.frequencia_alertas, "frequente");
 
-        // 2. Desserialização de JSON legado sem os campos personalidade e limite_caracteres (deve usar defaults)
+        // 2. Desserialização de JSON legado sem os campos personalidade, limite e alertas (deve usar defaults)
         let json_legado = r#"{"user_name": "Climaco", "gemini_api_key": "AIzaSyLegacyKey"}"#;
         let lida_legada: AppConfig = serde_json::from_str(json_legado).unwrap();
         assert_eq!(lida_legada.user_name, "Climaco");
         assert_eq!(lida_legada.gemini_api_key, "AIzaSyLegacyKey");
         assert_eq!(lida_legada.personalidade, "espelho");
         assert_eq!(lida_legada.limite_caracteres, 70);
+        assert!(lida_legada.alerta_lixeira);
+        assert!(lida_legada.alerta_downloads);
+        assert!(lida_legada.alerta_bem_estar);
+        assert!(lida_legada.alerta_curiosidades);
+        assert_eq!(lida_legada.frequencia_alertas, "equilibrado");
 
         // 3. Compatibilidade: se personalidade for "sarcastico", deve ser tratada como "hostil"
         let json_sarcastico = r#"{"user_name": "Alan", "gemini_api_key": "key123", "personalidade": "sarcastico", "limite_caracteres": 140}"#;
@@ -1562,6 +1626,14 @@ mod tests {
             cfg_sarcastico.personalidade = "hostil".to_string();
         }
         assert_eq!(cfg_sarcastico.personalidade, "hostil");
+
+        // 4. Compatibilidade: se personalidade for "manuel_gomes", migra silenciosamente para "espelho"
+        let json_mg = r#"{"user_name": "Alan", "personalidade": "manuel_gomes"}"#;
+        let mut cfg_mg: AppConfig = serde_json::from_str(json_mg).unwrap();
+        if cfg_mg.personalidade.trim().eq_ignore_ascii_case("manuel_gomes") {
+            cfg_mg.personalidade = "espelho".to_string();
+        }
+        assert_eq!(cfg_mg.personalidade, "espelho");
 
         let _ = fs::remove_dir_all(&tmp_dir);
     }
@@ -1574,18 +1646,16 @@ mod tests {
         let inst_espelho = obter_instrucao_personalidade("espelho");
         assert!(inst_espelho.contains(regra_nome));
         assert!(inst_espelho.contains("Educado, Engraçado e Sério/Direto"));
-        assert!(inst_espelho.contains("PROIBIDO acionar o comportamento Hostil pesado"));
-        assert!(inst_espelho.contains("PROIBIDO encarnar o Manuel Gomes"));
+        assert!(inst_espelho.contains("PROIBIDO acionar o comportamento Hostil/ácido pesado"));
 
         // 2. Hostil
         let inst_hostil = obter_instrucao_personalidade("hostil");
         assert!(inst_hostil.contains(regra_nome));
-        assert!(inst_hostil.contains("abertamente agressivo"));
-        assert!(inst_hostil.contains("PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA"));
-        assert!(inst_hostil.contains("LINGUAGEM HUMANA DE INTERNET"));
-        assert!(inst_hostil.contains("COMPRAR A BRISA E PEGADINHAS"));
-        assert!(inst_hostil.contains("PERGUNTAS IDIOTAS / CÓDIGO BÁSICO"));
-        assert!(inst_hostil.contains("PEDIDOS DIRETO DE XINGAMENTO"));
+        assert!(inst_hostil.contains("humor ácido, irônico, seco e fatalista"));
+        assert!(inst_hostil.contains("HUMOR ÁCIDO E IRONIAS HISTÓRICAS"));
+        assert!(inst_hostil.contains("DEBOCHE INTELIGENTE E SEM PACIÊNCIA"));
+        assert!(inst_hostil.contains("PEGADINHAS E PROVOCAÇÕES"));
+        assert!(inst_hostil.contains("SEM BORDÕES ROBÓTICOS"));
 
         // 3. Compatibilidade: "sarcastico" mapeia para o modo hostil
         let inst_sarcastico = obter_instrucao_personalidade("sarcastico");
@@ -1606,12 +1676,9 @@ mod tests {
         assert!(inst_direto.contains(regra_nome));
         assert!(inst_direto.contains("100% sério"));
 
-        // 7. Manuel Gomes
+        // 7. Manuel Gomes (removido, cai no fallback suave para espelho)
         let inst_mg = obter_instrucao_personalidade("manuel_gomes");
-        assert!(inst_mg.contains(regra_nome));
-        assert!(inst_mg.contains("Manuel Gomes"));
-        assert!(inst_mg.contains("bom demaize"));
-        assert!(inst_mg.contains("Caneeeta azuuul"));
+        assert_eq!(inst_mg, inst_espelho);
 
         // 8. Fallback para valor desconhecido (deve cair em espelho)
         let inst_desconhecido = obter_instrucao_personalidade("desconhecido");
@@ -1675,8 +1742,8 @@ mod tests {
     }
 
     #[test]
-    fn test_validar_reacao_7_opcoes_e_fallback() {
-        // Validação das 7 reações oficiais suportadas
+    fn test_validar_reacao_8_opcoes_e_fallback() {
+        // Validação das 8 reações oficiais suportadas
         assert_eq!(validar_reacao(Some("normal")), "normal");
         assert_eq!(validar_reacao(Some("feliz")), "feliz");
         assert_eq!(validar_reacao(Some("frustrado")), "frustrado");
@@ -1684,6 +1751,7 @@ mod tests {
         assert_eq!(validar_reacao(Some("explicando")), "explicando");
         assert_eq!(validar_reacao(Some("bocejo")), "bocejo");
         assert_eq!(validar_reacao(Some("lambendo")), "lambendo");
+        assert_eq!(validar_reacao(Some("raiva")), "raiva");
 
         // "sentado" removido do catálogo oficial deve cair no fallback para "normal"
         assert_eq!(validar_reacao(Some("sentado")), "normal");

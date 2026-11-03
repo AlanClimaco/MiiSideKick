@@ -1,7 +1,7 @@
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
-// Importação das 7 expressões visuais oficiais para garantir empacotamento pelo bundler
+// Importação das 8 expressões visuais oficiais para garantir empacotamento pelo bundler
 import miiNormal from '../assets/reacoes/mii-normal.png';
 import miiFeliz from '../assets/reacoes/mii-feliz.png';
 import miiFrustrado from '../assets/reacoes/mii-frustrado.png';
@@ -9,9 +9,10 @@ import miiAssustado from '../assets/reacoes/mii-assustado.png';
 import miiExplicando from '../assets/reacoes/mii-explicando.png';
 import miiBocejo from '../assets/reacoes/mii-bocejo.png';
 import miiLambendo from '../assets/reacoes/mii-lambendo.png';
-import bellSound from '../assets/audio/bell.wav';
+import miiRaiva from '../assets/reacoes/mii-raiva.png';
+import bellSound from '../assets/audio/notification.wav';
 
-// Mapa das 7 reações suportadas com suporte a aliases
+// Mapa das 8 reações suportadas com suporte a aliases
 const mapaAssetsReacoes: Record<string, string> = {
     normal: miiNormal,
     feliz: miiFeliz,
@@ -20,6 +21,9 @@ const mapaAssetsReacoes: Record<string, string> = {
     explicando: miiExplicando,
     bocejo: miiBocejo,
     lambendo: miiLambendo,
+    raiva: miiRaiva,
+    bravo: miiRaiva,
+    irritado: miiRaiva,
     erro: miiFrustrado,
     tranquilo: miiFeliz,
     sucesso: miiFeliz,

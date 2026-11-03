@@ -2,7 +2,7 @@
 
 > Assistente de desktop inteligente, leve e expressivo com IA nativa (Google Gemini), automação de rotinas e estética nostálgica Frutiger Aero.
 
-O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvida para operar de forma silenciosa e não-intrusiva na bandeja do sistema (System Tray). Combinando a velocidade e o baixo consumo de recursos do Rust com uma interface desacoplada e elegante, ele automatiza a manutenção do sistema e traz um companheiro de desktop reativo com expressões emocionais dinâmicas.
+O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvida para operar de forma silenciosa e não-intrusiva na bandeja do sistema (System Tray). Combinando a velocidade e o baixo consumo de recursos do Rust com uma interface desacoplada e elegante, ele automatiza a manutenção do sistema e traz um companheiro de desktop reativo com expressões emocionais dinâmicas e proatividade inteligente.
 
 ---
 
@@ -15,18 +15,18 @@ O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvi
     *  Educado: Polido, paciente e formal como um mordomo.
     *  Engraçado: Trocadilhos, piadinhas leves e bom humor.
     *  Sério e Direto: 100% objetivo, técnico e sem rodeios.
-    *  Hostil: Agressivo, sem filtro e direto ao ponto quando provocado ou ao responder perguntas óbvias (reclamando do gasto de cota da API, sem usar bordões robóticos de IA e reativo a pegadinhas e trocadilhos).
-    *  Manuel Gomes: Responde como o cantor Manuel Gomes (Caneta Azul), com sotaque e expressões características, sabedoria popular do interior e cantarolas espontâneas de suas músicas.
+    *  Hostil: Ácido, irônico e refinado com humor negro, mortes históricas bizarras, sarcasmo e fatalismo cômico (sem usar bordões robóticos nem ofensas repetitivas).
 *  Uso Moderado do Nome: A IA utiliza o nome do usuário de forma natural e ocasional, sem repetições artificiais a cada frase.
 *  Fluxo Contínuo de Resposta: Botão "Responder" integrado que mantém a memória de curto prazo (contexto da conversa) e fecha o balão automaticamente para evitar sobreposição de janelas.
 *  Links e Referências Externas: Para dúvidas complexas ou quando perguntado sobre sua autoria (Alan Clímaco), o Mii exibe botões discretos com links diretos para documentações e portfólio.
 *  Limite Calibrável de Caracteres: Escolha entre presets rápidos (Curto: 70, Médio: 140, Longo: 250) ou personalize livremente o teto máximo entre 30 e 500 caracteres.
 
 ### Reações Visuais Dinâmicas
-O avatar do Mii reage em tempo real de acordo com o sentimento da conversa ou o status das tarefas do sistema através de 7 sprites oficiais:
+O avatar do Mii reage em tempo real de acordo com o sentimento da conversa ou o status das tarefas do sistema através de 8 sprites oficiais:
 *  normal: Respostas cotidianas e status padrão.
 *  feliz: Elogios, bom humor e faxina concluída.
-*  frustrado: Respostas ríspidas a insultos ou avisos de lixeira já vazia.
+*  frustrado: Decepção, tristeza, aviso de lixeira já vazia ou falhas do sistema.
+*  raiva: Broncas, irritação, respostas com fúria ou xingamentos.
 *  assustado: Perguntas chocantes e alerta de fim do timer.
 *  explicando: Tutoriais e explicações de conceitos técnicos.
 *  bocejo: Tédio, perguntas repetitivas ou lembretes de descanso.
@@ -37,12 +37,20 @@ O avatar do Mii reage em tempo real de acordo com o sentimento da conversa ou o 
 *  Ancoragem automática e inteligente no canto inferior direito da tela ativa no Windows e Linux.
 *  Pausa automática do temporizador do balão de fala ao passar o mouse por cima (hover).
 
+### Motor Proativo de Alertas & Automação
+*  Monitoramento de Manutenção: Identifica proativamente quando a lixeira está muito cheia ou se há acúmulo de arquivos soltos na pasta Downloads, sugerindo faxina ou organização.
+*  Lembretes de Bem-Estar: Dispara avisos de saúde e ergonomia (hidratação e correção de postura) após períodos contínuos de uso do computador.
+*  Curiosidades com IA: Pílulas de conhecimento disparadas proativamente respeitando a personalidade configurada e os limites de resposta.
+*  Painel de Frequência Customizável: Ajuste no Setup a frequência das notificações (Discreto, Equilibrado, Frequente) e selecione individualmente quais tipos de alerta deseja receber.
+
 ### Super Organizador de Arquivos (Lazy Creation)
 *  Triagem inteligente de arquivos soltos em pastas categorizadas (Documentos, Instaladores, Mídias, Projetos, E-books, Emulação de consoles como PS1, PS2, NDS, 3DS, etc.).
 *  Criação sob Demanda: Pastas de destino só são criadas no disco caso de fato exista algum arquivo daquela categoria para ser movido.
 
 ### Manutenção e Produtividade
 *  Limpeza de Lixo do PC: Esvaziamento assíncrono e seguro da lixeira nativa (SHEmptyRecycleBinW no Windows e FreeDesktop Trash no Linux).
+*  Atalho Global no Teclado (Ctrl + Shift + M): Acione a caixa de pergunta ao Mii instantaneamente a partir de qualquer aplicativo ou jogo.
+*  Verificador Automático de Atualizações (Auto-Updater): Checagem assíncrona ao iniciar via API do GitHub (`releases/latest`), notificando quando houver uma nova release disponível com link direto.
 *  Lembretes e Timer com Alerta Sonoro: Agendamento de notificações com avisos visuais silenciosos e reprodução do efeito sonoro bell.wav exclusivamente no momento de término do tempo.
 
 ---
@@ -50,7 +58,7 @@ O avatar do Mii reage em tempo real de acordo com o sentimento da conversa ou o 
 ## Tecnologias Utilizadas
 
 *  Backend: Rust - Performance extrema, segurança de memória e integração nativa com o sistema operacional.
-*  Shell e Core: Tauri v2 - Orquestração de janelas, system tray, menus nativos e comunicação IPC assíncrona.
+*  Shell e Core: Tauri v2 - Orquestração de janelas, system tray, menus nativos, atalhos globais e comunicação IPC assíncrona.
 *  Frontend: TypeScript, HTML5 e CSS3 nativo (Vanilla MPA - sem sobrecarga de frameworks).
 *  Inteligência Artificial: Google Gemini API (Endpoint v1beta / modelo gemini-3.8-flash).
 *  Áudio: HTML5 Audio API integrado via bundling estático do Vite (bell.wav).
@@ -65,17 +73,18 @@ MiiSideKick/
 ├── src-tauri/                 # Backend nativo em Rust
 │   ├── src/
 │   │   ├── main.rs            # Ciclo de vida, pré-carregamento de janelas e System Tray
-│   │   └── comandos.rs        # Chamadas da API Gemini, organizador, limpeza e I/O
+│   │   ├── comandos.rs        # Chamadas da API Gemini, organizador, limpeza e I/O
+│   │   └── gatilhos.rs        # Motor proativo de background, saúde do sistema e auto-updater
 │   ├── tauri.conf.json        # Configuração de permissões, janelas e bundles
-│   └── Cargo.toml             # Dependências do ecossistema Rust
+│   └── Cargo.toml             # Dependências do ecossistema Rust (tauri-plugin-global-shortcut)
 ├── src/                       # Frontend da aplicação
-│   ├── assets/                # Recursos visuais e áudio (sprites, mii.png, audio/bell.wav)
+│   ├── assets/                # Recursos visuais e áudio (sprites de reações, mii.png, audio/bell.wav)
 │   ├── css/                   # Folhas de estilo (setup.css, notificacao.css, global.css)
 │   ├── notificacao/           # Balão flutuante de alertas, áudio e fala do avatar
 │   ├── pergunta/              # Janela rápida de envio de perguntas ao Mii
 │   ├── timer/                 # Janela de configuração de lembretes
 │   ├── index.html             # Janela de Setup e Onboarding (Frutiger Aero)
-│   └── main.ts                # Lógica e persistência da tela de configurações
+│   └── main.ts                # Lógica, preferências proativas e persistência da tela de configurações
 └── vite.config.ts             # Configuração de bundling Multi-Page Application (MPA)
 ```
 
@@ -126,8 +135,8 @@ assistente
 
 1. Obtenha uma chave de API gratuita no Google AI Studio (https://aistudio.google.com/app/apikey).
 2. Abra as Configurações do MiiSideKick pelo ícone da bandeja.
-3. Cole o token no campo Chave de API do Gemini, ajuste a sua personalidade favorita e clique em Salvar e Ocultar.
-4. Clique com o botão direito na bandeja e escolha Conversar com o Mii.
+3. Cole o token no campo Chave de API do Gemini, ajuste a sua personalidade favorita, configure os Alertas Proativos e clique em Salvar e Ocultar.
+4. Clique com o botão direito na bandeja ou pressione `Ctrl + Shift + M` para conversar com o Mii.
 
 ---
 

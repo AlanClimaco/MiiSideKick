@@ -132,7 +132,8 @@
 }
 
 .setup-section label,
-.custom-limit-label {
+.custom-limit-label,
+.frequency-title-label {
     display: block;
     margin-bottom: 6px;
     color: var(--aero-label);
@@ -201,6 +202,7 @@
 
 .personality-btn,
 .length-btn,
+.frequency-btn,
 .btn-toggle-key {
     padding: 8px 10px;
     background: linear-gradient(to bottom, #ffffff 0%, #e2f0fc 50%, #cce5f8 51%, #dff0fd 100%);
@@ -220,6 +222,7 @@
 
 .personality-btn:hover,
 .length-btn:hover,
+.frequency-btn:hover,
 .btn-toggle-key:hover {
     background: linear-gradient(to bottom, #ffffff 0%, #d7f1ff 50%, #b6e0fa 51%, #d7f2ff 100%);
     border-color: #559bd0;
@@ -227,7 +230,8 @@
 }
 
 .personality-btn.active,
-.length-btn.active {
+.length-btn.active,
+.frequency-btn.active {
     background: linear-gradient(to bottom, #dcf0ff 0%, #9ed4fb 50%, #76beee 51%, #a4daf9 100%);
     border-color: #2c7eb9;
     color: #12364e;
@@ -236,6 +240,7 @@
 
 .personality-btn:active,
 .length-btn:active,
+.frequency-btn:active,
 .btn-toggle-key:active {
     background: linear-gradient(to bottom, #add2ed, #d4ecfb);
     box-shadow: inset 0 2px 3px rgba(32, 79, 114, 0.22);
@@ -287,12 +292,14 @@
     gap: 8px;
 }
 
-.length-presets {
+.length-presets,
+.frequency-presets {
     display: flex;
     gap: 6px;
 }
 
-.length-btn {
+.length-btn,
+.frequency-btn {
     flex: 1;
     min-width: 0;
     padding: 7px 6px;
@@ -317,6 +324,22 @@
 .length-unit {
     color: var(--aero-label);
     font-size: 12px;
+}
+
+.proactive-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.frequency-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 4px;
+    padding-top: 10px;
+    border-top: 1px dashed rgba(125, 168, 202, 0.4);
 }
 
 .setup-section .checkbox-label {

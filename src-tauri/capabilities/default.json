@@ -5,11 +5,13 @@
   "windows": [
     "main",
     "popup",
-    "timer"
+    "timer",
+    "pergunta"
   ],
   "permissions": [
     "core:default",
     "opener:default",
-    "autostart:default"
+    "autostart:default",
+    "global-shortcut:default"
   ]
 }

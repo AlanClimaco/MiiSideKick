@@ -29,7 +29,7 @@
         <div class="section-title">Personalidade</div>
         <div class="personality-grid" id="personalityContainer">
           <button type="button" class="personality-btn active" data-personality="espelho">
-            Espelho (Padrão)
+            Espelho
           </button>
           <button type="button" class="personality-btn" data-personality="educado">
             Educado
@@ -42,9 +42,6 @@
           </button>
           <button type="button" class="personality-btn" data-personality="hostil">
             Hostil
-          </button>
-          <button type="button" class="personality-btn" data-personality="manuel_gomes">
-            Manuel Gomes
           </button>
         </div>
         <p class="personality-hint" id="personalityHint">
@@ -90,6 +87,39 @@
             <span class="length-unit">caracteres</span>
           </div>
           <p class="input-hint">Limite máximo de caracteres que o Mii usará nas respostas.</p>
+        </div>
+      </section>
+
+      <!-- Seção Alertas Proativos -->
+      <section class="setup-section">
+        <div class="section-title">Alertas Proativos</div>
+        <div class="proactive-controls">
+          <label class="checkbox-label" for="checkAlertaLixeira">
+            <input type="checkbox" id="checkAlertaLixeira" class="checkbox-input" checked>
+            <span>Avisar quando a lixeira estiver cheia</span>
+          </label>
+          <label class="checkbox-label" for="checkAlertaDownloads">
+            <input type="checkbox" id="checkAlertaDownloads" class="checkbox-input" checked>
+            <span>Avisar acúmulo na pasta Downloads</span>
+          </label>
+          <label class="checkbox-label" for="checkAlertaBemEstar">
+            <input type="checkbox" id="checkAlertaBemEstar" class="checkbox-input" checked>
+            <span>Lembretes de bem-estar (água e postura)</span>
+          </label>
+          <label class="checkbox-label" for="checkAlertaCuriosidades">
+            <input type="checkbox" id="checkAlertaCuriosidades" class="checkbox-input" checked>
+            <span>Curiosidades e pensamentos aleatórios</span>
+          </label>
+        </div>
+
+        <div class="frequency-container">
+          <label class="frequency-title-label">Frequência dos alertas:</label>
+          <div class="frequency-presets">
+            <button type="button" class="frequency-btn" data-frequency="discreto">Discreto</button>
+            <button type="button" class="frequency-btn active" data-frequency="equilibrado">Equilibrado</button>
+            <button type="button" class="frequency-btn" data-frequency="frequente">Frequente</button>
+          </div>
+          <p class="input-hint" id="frequencyHint">Intervalos balanceados e lembretes amigáveis ao longo do dia.</p>
         </div>
       </section>
 
