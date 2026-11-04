@@ -94,21 +94,13 @@
       <section class="setup-section">
         <div class="section-title">Alertas Proativos</div>
         <div class="proactive-controls">
-          <label class="checkbox-label" for="checkAlertaLixeira">
-            <input type="checkbox" id="checkAlertaLixeira" class="checkbox-input" checked>
-            <span>Avisar quando a lixeira estiver cheia</span>
+          <label class="checkbox-label" for="checkAlertaManutencao">
+            <input type="checkbox" id="checkAlertaManutencao" class="checkbox-input" checked>
+            <span><strong>Manutenção do Sistema</strong> (Lixeira cheia e acúmulo na pasta Downloads)</span>
           </label>
-          <label class="checkbox-label" for="checkAlertaDownloads">
-            <input type="checkbox" id="checkAlertaDownloads" class="checkbox-input" checked>
-            <span>Avisar acúmulo na pasta Downloads</span>
-          </label>
-          <label class="checkbox-label" for="checkAlertaBemEstar">
-            <input type="checkbox" id="checkAlertaBemEstar" class="checkbox-input" checked>
-            <span>Lembretes de bem-estar (água e postura)</span>
-          </label>
-          <label class="checkbox-label" for="checkAlertaCuriosidades">
-            <input type="checkbox" id="checkAlertaCuriosidades" class="checkbox-input" checked>
-            <span>Curiosidades e pensamentos aleatórios</span>
+          <label class="checkbox-label" for="checkAlertaInteracaoBemEstar">
+            <input type="checkbox" id="checkAlertaInteracaoBemEstar" class="checkbox-input" checked>
+            <span><strong>Interação & Bem-Estar</strong> (Lembretes de saúde/água/postura e curiosidades de IA)</span>
           </label>
         </div>
 
@@ -150,6 +142,10 @@
       </div>
 
       <button type="button" class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
+
+      <footer class="setup-footer">
+        Desenvolvido por <a href="XXX" target="_blank" class="footer-link">Alan Clímaco</a>
+      </footer>
     </div>
 
     <script type="module" src="/src/main.ts"></script>

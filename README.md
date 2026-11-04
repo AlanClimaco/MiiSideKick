@@ -15,7 +15,7 @@ O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvi
     *  Educado: Polido, paciente e formal como um mordomo.
     *  Engraçado: Trocadilhos, piadinhas leves e bom humor.
     *  Sério e Direto: 100% objetivo, técnico e sem rodeios.
-    *  Hostil: Ácido, irônico e refinado com humor negro, mortes históricas bizarras, sarcasmo e fatalismo cômico (sem usar bordões robóticos nem ofensas repetitivas).
+    *  Hostil: Abertamente agressivo, boca-suja, sem paciência e estressado. Usa gírias brasileiras e xingamentos diretos para perguntas bobas ou pegadinhas, sem bordões robóticos de IA.
 *  Uso Moderado do Nome: A IA utiliza o nome do usuário de forma natural e ocasional, sem repetições artificiais a cada frase.
 *  Fluxo Contínuo de Resposta: Botão "Responder" integrado que mantém a memória de curto prazo (contexto da conversa) e fecha o balão automaticamente para evitar sobreposição de janelas.
 *  Links e Referências Externas: Para dúvidas complexas ou quando perguntado sobre sua autoria (Alan Clímaco), o Mii exibe botões discretos com links diretos para documentações e portfólio.
@@ -41,7 +41,7 @@ O avatar do Mii reage em tempo real de acordo com o sentimento da conversa ou o 
 *  Monitoramento de Manutenção: Identifica proativamente quando a lixeira está muito cheia ou se há acúmulo de arquivos soltos na pasta Downloads, sugerindo faxina ou organização.
 *  Lembretes de Bem-Estar: Dispara avisos de saúde e ergonomia (hidratação e correção de postura) após períodos contínuos de uso do computador.
 *  Curiosidades com IA: Pílulas de conhecimento disparadas proativamente respeitando a personalidade configurada e os limites de resposta.
-*  Painel de Frequência Customizável: Ajuste no Setup a frequência das notificações (Discreto, Equilibrado, Frequente) e selecione individualmente quais tipos de alerta deseja receber.
+*  Painel de Frequência Customizável: Ajuste no Setup a frequência das notificações (Discreto, Equilibrado, Frequente) e habilite as categorias desejadas (Manutenção do Sistema e Interação & Bem-Estar).
 
 ### Super Organizador de Arquivos (Lazy Creation)
 *  Triagem inteligente de arquivos soltos em pastas categorizadas (Documentos, Instaladores, Mídias, Projetos, E-books, Emulação de consoles como PS1, PS2, NDS, 3DS, etc.).

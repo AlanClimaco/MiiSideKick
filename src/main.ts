@@ -13,11 +13,9 @@ const personalityHint = document.getElementById("personalityHint");
 const inputLimite = document.getElementById("limiteCaracteres") as HTMLInputElement;
 const lengthButtons = document.querySelectorAll<HTMLButtonElement>(".length-btn");
 
-// Controles de alertas proativos
-const checkAlertaLixeira = document.getElementById("checkAlertaLixeira") as HTMLInputElement;
-const checkAlertaDownloads = document.getElementById("checkAlertaDownloads") as HTMLInputElement;
-const checkAlertaBemEstar = document.getElementById("checkAlertaBemEstar") as HTMLInputElement;
-const checkAlertaCuriosidades = document.getElementById("checkAlertaCuriosidades") as HTMLInputElement;
+// Controles de alertas proativos (2 categorias)
+const checkAlertaManutencao = document.getElementById("checkAlertaManutencao") as HTMLInputElement;
+const checkAlertaInteracaoBemEstar = document.getElementById("checkAlertaInteracaoBemEstar") as HTMLInputElement;
 const frequencyButtons = document.querySelectorAll<HTMLButtonElement>(".frequency-btn");
 const frequencyHint = document.getElementById("frequencyHint");
 
@@ -30,8 +28,8 @@ const DESC_PERSONALIDADES: Record<string, string> = {
     educado: "Extremamente educado, formal, paciente e gentil, como um mordomo atencioso.",
     engracado: "Engraçado e bem-humorado. Piadinhas leves, trocadilhos e respostas descontraídas.",
     direto: "100% sério, técnico, direto ao ponto e objetivo, sem enrolações.",
-    hostil: "Humor ácido, fatalismo cômico, piadas secas e ironias históricas mordazes.",
-    sarcastico: "Humor ácido, fatalismo cômico, piadas secas e ironias históricas mordazes.",
+    hostil: "Abertamente agressivo, boca-suja, estressado e sem paciência.",
+    sarcastico: "Abertamente agressivo, boca-suja, estressado e sem paciência.",
 };
 
 function selecionarPersonalidade(personalidade: string) {
@@ -185,18 +183,12 @@ async function carregarDadosDoPC() {
                 atualizarLimiteVisual(70);
             }
 
-            // Alertas proativos
-            if (checkAlertaLixeira) {
-                checkAlertaLixeira.checked = config.alerta_lixeira !== false;
+            // Alertas proativos (2 categorias)
+            if (checkAlertaManutencao) {
+                checkAlertaManutencao.checked = config.alerta_manutencao !== false;
             }
-            if (checkAlertaDownloads) {
-                checkAlertaDownloads.checked = config.alerta_downloads !== false;
-            }
-            if (checkAlertaBemEstar) {
-                checkAlertaBemEstar.checked = config.alerta_bem_estar !== false;
-            }
-            if (checkAlertaCuriosidades) {
-                checkAlertaCuriosidades.checked = config.alerta_curiosidades !== false;
+            if (checkAlertaInteracaoBemEstar) {
+                checkAlertaInteracaoBemEstar.checked = config.alerta_interacao_bem_estar !== false;
             }
             if (config.frequencia_alertas) {
                 selecionarFrequencia(config.frequencia_alertas);
@@ -225,11 +217,13 @@ async function carregarDadosDoPC() {
 }
 
 // Intercepta links externos para abrir no navegador padrão com o plugin-opener
-document.querySelectorAll('a[href^="http"]').forEach(link => {
+document.querySelectorAll('a[href^="http"], a.footer-link').forEach(link => {
     link.addEventListener('click', (e) => {
         e.preventDefault();
         const url = (link as HTMLAnchorElement).href;
-        openUrl(url).catch(() => window.open(url, '_blank'));
+        if (url && url !== "XXX" && !url.endsWith("/XXX")) {
+            openUrl(url).catch(() => window.open(url, '_blank'));
+        }
     });
 });
 
@@ -248,10 +242,8 @@ if (btnSalvar) {
                     gemini_api_key: geminiApiKey?.value?.trim() || "",
                     personalidade: personalidadeAtual,
                     limite_caracteres: limiteFinal,
-                    alerta_lixeira: checkAlertaLixeira ? checkAlertaLixeira.checked : true,
-                    alerta_downloads: checkAlertaDownloads ? checkAlertaDownloads.checked : true,
-                    alerta_bem_estar: checkAlertaBemEstar ? checkAlertaBemEstar.checked : true,
-                    alerta_curiosidades: checkAlertaCuriosidades ? checkAlertaCuriosidades.checked : true,
+                    alerta_manutencao: checkAlertaManutencao ? checkAlertaManutencao.checked : true,
+                    alerta_interacao_bem_estar: checkAlertaInteracaoBemEstar ? checkAlertaInteracaoBemEstar.checked : true,
                     frequencia_alertas: frequenciaAtual
                 }
             });

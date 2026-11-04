@@ -196,9 +196,19 @@ pub fn obter_curiosidade_proativa(
     indice_fallback: usize,
 ) -> (String, String) {
     if !api_key.trim().is_empty() {
+        let tom = match personalidade {
+            "hostil" | "sarcastico" => {
+                "Adote um tom de humor negro, mórbido, ácido e sarcasmo inteligente (fatos bizarros, mortes cômicas ou ironias da história). ATENÇÃO: NUNCA xingue nem ofenda o usuário diretamente, pois ele não fez pergunta alguma; direcione o cinismo e deboche exclusivamente ao fato narrado."
+            }
+            "educado" => "Seja extremamente educado, formal, paciente e gentil.",
+            "engracado" => "Seja muito bem-humorado, brincalhão, faça piadinhas leves e trocadilhos.",
+            "direto" => "Seja 100% sério, técnico, conciso e direto ao ponto.",
+            _ => "Seja equilibrado, curioso, amigável e descontraído.",
+        };
+
         let prompt = format!(
             "Você é o MiiSideKick. Conte uma curiosidade curta, curiosa e fascinante em português (ciência, história, fatos bizarros ou ironias cotidianas). \
-            Tom da personalidade: {personalidade}. \
+            Instrução de tom da personalidade: {tom} \
             Tamanho máximo ESTRITO: {limite_chars} caracteres. \
             Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<texto>\"}} sem markdown."
         );
@@ -318,8 +328,8 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
             if !em_cooldown_global {
                 let mut disparou = false;
 
-                // 2.1 Alerta de manutenção: Lixeira Cheia
-                if config.alerta_lixeira && !disparou {
+                // 2.1 Categoria 1: Manutenção do Sistema (Lixeira e Downloads)
+                if config.alerta_manutencao && !disparou {
                     let pode_lixeira = match estado.ultimo_alerta_lixeira {
                         None => true,
                         Some(inst) => agora.duration_since(inst) >= Duration::from_secs(2 * 3600),
@@ -339,33 +349,32 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                             false,
                         );
                     }
-                }
 
-                // 2.2 Alerta de manutenção: Acúmulo de Downloads
-                if config.alerta_downloads && !disparou {
-                    let pode_downloads = match estado.ultimo_alerta_downloads {
-                        None => true,
-                        Some(inst) => agora.duration_since(inst) >= Duration::from_secs(2 * 3600),
-                    };
+                    if !disparou {
+                        let pode_downloads = match estado.ultimo_alerta_downloads {
+                            None => true,
+                            Some(inst) => agora.duration_since(inst) >= Duration::from_secs(2 * 3600),
+                        };
 
-                    if pode_downloads && verificar_downloads_acumulados() {
-                        estado.ultimo_alerta_downloads = Some(agora);
-                        estado.ultimo_disparo_global = agora;
-                        disparou = true;
-                        disparar_notificacao(
-                            &app,
-                            "Sua pasta de Downloads acumulou muitos arquivos. Posso organizá-los se quiser!",
-                            "feliz",
-                            None,
-                            None,
-                            false,
-                            false,
-                        );
+                        if pode_downloads && verificar_downloads_acumulados() {
+                            estado.ultimo_alerta_downloads = Some(agora);
+                            estado.ultimo_disparo_global = agora;
+                            disparou = true;
+                            disparar_notificacao(
+                                &app,
+                                "Sua pasta de Downloads acumulou muitos arquivos. Posso organizá-los se quiser!",
+                                "feliz",
+                                None,
+                                None,
+                                false,
+                                false,
+                            );
+                        }
                     }
                 }
 
-                // 2.3 Lembrete de bem-estar (água e postura)
-                if config.alerta_bem_estar && !disparou {
+                // 2.2 Categoria 2: Interação & Bem-Estar (Saúde/Água/Postura e Curiosidades)
+                if config.alerta_interacao_bem_estar && !disparou {
                     let tempo_bem_estar = agora.duration_since(estado.ultimo_alerta_bem_estar);
                     if tempo_bem_estar >= Duration::from_secs(bem_estar_minutos * 60) {
                         estado.ultimo_alerta_bem_estar = agora;
@@ -381,24 +390,23 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
 
                         disparar_notificacao(&app, msg, "feliz", None, None, false, false);
                     }
-                }
 
-                // 2.4 Curiosidades e pensamentos aleatórios
-                if config.alerta_curiosidades && !disparou {
-                    let tempo_curiosidade = agora.duration_since(estado.ultimo_alerta_curiosidade);
-                    if tempo_curiosidade >= Duration::from_secs(curiosidade_minutos * 60) {
-                        estado.ultimo_alerta_curiosidade = agora;
-                        estado.ultimo_disparo_global = agora;
+                    if !disparou {
+                        let tempo_curiosidade = agora.duration_since(estado.ultimo_alerta_curiosidade);
+                        if tempo_curiosidade >= Duration::from_secs(curiosidade_minutos * 60) {
+                            estado.ultimo_alerta_curiosidade = agora;
+                            estado.ultimo_disparo_global = agora;
 
-                        let (texto, reacao) = obter_curiosidade_proativa(
-                            &config.gemini_api_key,
-                            config.limite_caracteres,
-                            &config.personalidade,
-                            estado.indice_curiosidade,
-                        );
-                        estado.indice_curiosidade += 1;
+                            let (texto, reacao) = obter_curiosidade_proativa(
+                                &config.gemini_api_key,
+                                config.limite_caracteres,
+                                &config.personalidade,
+                                estado.indice_curiosidade,
+                            );
+                            estado.indice_curiosidade += 1;
 
-                        disparar_notificacao(&app, &texto, &reacao, None, None, true, false);
+                            disparar_notificacao(&app, &texto, &reacao, None, None, true, false);
+                        }
                     }
                 }
             }
@@ -439,5 +447,9 @@ mod tests {
         let (texto, reacao) = obter_curiosidade_proativa("", 70, "espelho", 0);
         assert!(!texto.is_empty());
         assert!(!reacao.is_empty());
+
+        let (texto_hostil, reacao_hostil) = obter_curiosidade_proativa("", 70, "hostil", 1);
+        assert!(!texto_hostil.is_empty());
+        assert!(!reacao_hostil.is_empty());
     }
 }

@@ -667,13 +667,9 @@ pub struct AppConfig {
     #[serde(default = "default_limite_caracteres")]
     pub limite_caracteres: u32,
     #[serde(default = "default_true")]
-    pub alerta_lixeira: bool,
+    pub alerta_manutencao: bool,
     #[serde(default = "default_true")]
-    pub alerta_downloads: bool,
-    #[serde(default = "default_true")]
-    pub alerta_bem_estar: bool,
-    #[serde(default = "default_true")]
-    pub alerta_curiosidades: bool,
+    pub alerta_interacao_bem_estar: bool,
     #[serde(default = "default_frequencia")]
     pub frequencia_alertas: String,
 }
@@ -685,10 +681,8 @@ impl Default for AppConfig {
             gemini_api_key: String::new(),
             personalidade: default_personalidade(),
             limite_caracteres: default_limite_caracteres(),
-            alerta_lixeira: true,
-            alerta_downloads: true,
-            alerta_bem_estar: true,
-            alerta_curiosidades: true,
+            alerta_manutencao: true,
+            alerta_interacao_bem_estar: true,
             frequencia_alertas: default_frequencia(),
         }
     }
@@ -715,6 +709,18 @@ pub fn carregar_configuracoes() -> AppConfig {
                     {
                         cfg.frequencia_alertas = "equilibrado".to_string();
                     }
+                    if let Ok(v) = serde_json::from_str::<serde_json::Value>(&conteudo) {
+                        if v.get("alerta_manutencao").is_none() {
+                            if let (Some(l), Some(d)) = (v.get("alerta_lixeira"), v.get("alerta_downloads")) {
+                                cfg.alerta_manutencao = l.as_bool().unwrap_or(true) || d.as_bool().unwrap_or(true);
+                            }
+                        }
+                        if v.get("alerta_interacao_bem_estar").is_none() {
+                            if let (Some(b), Some(c)) = (v.get("alerta_bem_estar"), v.get("alerta_curiosidades")) {
+                                cfg.alerta_interacao_bem_estar = b.as_bool().unwrap_or(true) || c.as_bool().unwrap_or(true);
+                            }
+                        }
+                    }
                     return cfg;
                 }
             }
@@ -730,10 +736,8 @@ pub fn carregar_configuracoes() -> AppConfig {
         gemini_api_key: String::new(),
         personalidade: default_personalidade(),
         limite_caracteres: default_limite_caracteres(),
-        alerta_lixeira: true,
-        alerta_downloads: true,
-        alerta_bem_estar: true,
-        alerta_curiosidades: true,
+        alerta_manutencao: true,
+        alerta_interacao_bem_estar: true,
         frequencia_alertas: default_frequencia(),
     }
 }
@@ -831,11 +835,12 @@ pub(crate) fn obter_instrucao_personalidade(personalidade: &str) -> &'static str
         }
         "hostil" | "sarcastico" => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
-            O Mii adota um humor ácido, irônico, seco e fatalista, com sarcasmo inteligente e deboche mordaz.\n\
-            HUMOR ÁCIDO E IRONIAS HISTÓRICAS: Ao invés de xingamentos vulgares ou ofensas repetitivas baratas, use piadas secas, cinismo, ironias históricas e fatalismo cômico (ex: referências à epidemia de dança de 1518, inventores derrotados pela própria criação, o meme de que 'ninguém morreu na rua John Lennon', ironias sobre a finitude humana e o absurdo do cotidiano).\n\
-            DEBOCHE INTELIGENTE E SEM PACIÊNCIA: Trate dúvidas óbvias ou tolas com sarcasmo afiado, desdém refinado e ironia cínica, respondendo o que foi pedido mas deixando claro o quão patética ou trivial é a demanda.\n\
-            PEGADINHAS E PROVOCAÇÕES: Se o usuário tentar pegadinhas ou piadas prontas, desmonte-as com indiferença sarcástica ou dê uma resposta fatalista que corte a graça dele na raiz.\n\
-            SEM BORDÕES ROBÓTICOS: Evite clichês de IA (como 'quer que eu desenhe?' ou 'sua mente não processa'). Seja espontâneo, cáustico e memorável."
+            O Mii é abertamente agressivo, boca-suja, sem paciência e estressado.\n\
+            PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA: Proibido usar frases batidas como \"quer que eu desenhe?\", \"use massinha\", \"sua cabecinha oca\", \"veio do século passado\" ou \"sua mente não processa\".\n\
+            LINGUAGEM HUMANA DE INTERNET: Usar gírias brasileiras e xingamentos diretos, pesados e escrachados (ex: burro, acéfalo, arrombado, doente, cego, estúpido, energúmeno, fdp).\n\
+            COMPRAR A BRISA E PEGADINHAS: Se o usuário mandar pegadinhas/trocadilhos (ex: \"conhece o Mário?\"), NUNCA dê aula de moral dizendo que a piada é velha. Dê a volta por cima, mande a resposta da quinta série ou devolva um trocadilho humilhando o usuário no próprio jogo (ex: \"Aquele que te comeu atrás do armário? Seu arrombado\").\n\
+            PERGUNTAS IDIOTAS / CÓDIGO BÁSICO: Se o usuário perguntar algo óbvio (ex: \"quanto é 5x5?\" ou \"como printar em Python\"), dê a resposta correta, mas xingue a inteligência dele e reclame que ele está gastando requisições e tokens da API com besteira (ex: \"É 25, burro. É sério que tu tá gastando cota da API pra me perguntar isso?\").\n\
+            PEDIDOS DIRETO DE XINGAMENTO (\"me xinga\"): Seja pesado, direto e sem filtro."
         }
         _ => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
@@ -1585,10 +1590,8 @@ mod tests {
             gemini_api_key: "AIzaSyTest123".to_string(),
             personalidade: "sarcastico".to_string(),
             limite_caracteres: 140,
-            alerta_lixeira: true,
-            alerta_downloads: false,
-            alerta_bem_estar: true,
-            alerta_curiosidades: false,
+            alerta_manutencao: true,
+            alerta_interacao_bem_estar: false,
             frequencia_alertas: "frequente".to_string(),
         };
 
@@ -1600,10 +1603,8 @@ mod tests {
         assert_eq!(lida.gemini_api_key, "AIzaSyTest123");
         assert_eq!(lida.personalidade, "sarcastico");
         assert_eq!(lida.limite_caracteres, 140);
-        assert!(lida.alerta_lixeira);
-        assert!(!lida.alerta_downloads);
-        assert!(lida.alerta_bem_estar);
-        assert!(!lida.alerta_curiosidades);
+        assert!(lida.alerta_manutencao);
+        assert!(!lida.alerta_interacao_bem_estar);
         assert_eq!(lida.frequencia_alertas, "frequente");
 
         // 2. Desserialização de JSON legado sem os campos personalidade, limite e alertas (deve usar defaults)
@@ -1613,10 +1614,8 @@ mod tests {
         assert_eq!(lida_legada.gemini_api_key, "AIzaSyLegacyKey");
         assert_eq!(lida_legada.personalidade, "espelho");
         assert_eq!(lida_legada.limite_caracteres, 70);
-        assert!(lida_legada.alerta_lixeira);
-        assert!(lida_legada.alerta_downloads);
-        assert!(lida_legada.alerta_bem_estar);
-        assert!(lida_legada.alerta_curiosidades);
+        assert!(lida_legada.alerta_manutencao);
+        assert!(lida_legada.alerta_interacao_bem_estar);
         assert_eq!(lida_legada.frequencia_alertas, "equilibrado");
 
         // 3. Compatibilidade: se personalidade for "sarcastico", deve ser tratada como "hostil"
@@ -1651,11 +1650,12 @@ mod tests {
         // 2. Hostil
         let inst_hostil = obter_instrucao_personalidade("hostil");
         assert!(inst_hostil.contains(regra_nome));
-        assert!(inst_hostil.contains("humor ácido, irônico, seco e fatalista"));
-        assert!(inst_hostil.contains("HUMOR ÁCIDO E IRONIAS HISTÓRICAS"));
-        assert!(inst_hostil.contains("DEBOCHE INTELIGENTE E SEM PACIÊNCIA"));
-        assert!(inst_hostil.contains("PEGADINHAS E PROVOCAÇÕES"));
-        assert!(inst_hostil.contains("SEM BORDÕES ROBÓTICOS"));
+        assert!(inst_hostil.contains("O Mii é abertamente agressivo, boca-suja, sem paciência e estressado."));
+        assert!(inst_hostil.contains("PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA"));
+        assert!(inst_hostil.contains("LINGUAGEM HUMANA DE INTERNET"));
+        assert!(inst_hostil.contains("COMPRAR A BRISA E PEGADINHAS"));
+        assert!(inst_hostil.contains("PERGUNTAS IDIOTAS / CÓDIGO BÁSICO"));
+        assert!(inst_hostil.contains("PEDIDOS DIRETO DE XINGAMENTO"));
 
         // 3. Compatibilidade: "sarcastico" mapeia para o modo hostil
         let inst_sarcastico = obter_instrucao_personalidade("sarcastico");
