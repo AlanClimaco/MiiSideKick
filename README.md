@@ -1,4 +1,4 @@
-### MiiSideKick
+# MiiSideKick
 
 > Assistente de desktop inteligente, leve e expressivo com IA nativa (Google Gemini), automação de rotinas e estética nostálgica Frutiger Aero.
 
