@@ -1,21 +1,22 @@
 # MiiSideKick
 
-> Assistente de desktop inteligente, leve e expressivo com IA nativa (Google Gemini), automação de rotinas e estética nostálgica Frutiger Aero.
+> Assistente de desktop inteligente, leve e expressivo com IA nativa (Google Gemini), automação de rotinas e utilitários de sistema e estética nostálgica Frutiger Aero.
 
-O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvida para operar de forma silenciosa e não-intrusiva na bandeja do sistema (System Tray). Combinando a velocidade e o baixo consumo de recursos do Rust com uma interface desacoplada e elegante, ele automatiza a manutenção do sistema e traz um companheiro de desktop reativo com expressões emocionais dinâmicas e proatividade inteligente.
+O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvida para operar de forma silenciosa e não-intrusiva na bandeja do sistema (System Tray). Combinando a velocidade e o baixo consumo de recursos do Rust com uma interface desacoplada e elegante, ele automatiza a manutenção do sistema e traz um companheiro de desktop reativo com expressões emocionais dinâmicas e suporte multinacional.
 
 ---
 
 ## Principais Funcionalidades
 
-### Cérebro com IA e Personalidades (Google Gemini)
-*  Conversação Nativa no Desktop: Envie dúvidas e interaja rapidamente com o modelo gemini-3.8-flash por meio de uma janela flutuante e minimalista.
+### Cérebro com IA, Personalidades e Suporte Multinacional (Google Gemini)
+*  Suporte Bilíngue (PT/EN): Chaveador dinâmico no Setup para alternar entre Português (🇧🇷) e Inglês (🇺🇸), adaptando a interface, as respostas da IA e os alertas em segundo plano.
+*  Conversação Nativa no Desktop: Envie dúvidas e interaja rapidamente com o modelo gemini-3.8-flash por meio de uma janela flutuante acionada pelo menu da bandeja ou pelo atalho global (`Ctrl + Shift + M`).
 *  Modos de Resposta Configuráveis: Escolha na tela de Setup como o Mii deve se comportar:
     *  Espelho (Padrão): Adapta o tom de conversa conforme a interação do usuário, variando entre educado, engraçado e direto (sem xingamentos pesados nem encarnar personagens).
     *  Educado: Polido, paciente e formal como um mordomo.
     *  Engraçado: Trocadilhos, piadinhas leves e bom humor.
     *  Sério e Direto: 100% objetivo, técnico e sem rodeios.
-    *  Hostil: Abertamente agressivo, boca-suja, sem paciência e estressado. Usa gírias brasileiras e xingamentos diretos para perguntas bobas ou pegadinhas, sem bordões robóticos de IA.
+    *  Hostil: Agressivo, sem filtro e direto ao ponto quando provocado ou ao responder perguntas óbvias (reclamando do gasto de cota da API, sem usar bordões robóticos de IA e reativo a pegadinhas e trocadilhos).
 *  Uso Moderado do Nome: A IA utiliza o nome do usuário de forma natural e ocasional, sem repetições artificiais a cada frase.
 *  Fluxo Contínuo de Resposta: Botão "Responder" integrado que mantém a memória de curto prazo (contexto da conversa) e fecha o balão automaticamente para evitar sobreposição de janelas.
 *  Links e Referências Externas: Para dúvidas complexas ou quando perguntado sobre sua autoria (Alan Clímaco), o Mii exibe botões discretos com links diretos para documentações e portfólio.
@@ -49,19 +50,17 @@ O avatar do Mii reage em tempo real de acordo com o sentimento da conversa ou o 
 
 ### Manutenção e Produtividade
 *  Limpeza de Lixo do PC: Esvaziamento assíncrono e seguro da lixeira nativa (SHEmptyRecycleBinW no Windows e FreeDesktop Trash no Linux).
-*  Atalho Global no Teclado (Ctrl + Shift + M): Acione a caixa de pergunta ao Mii instantaneamente a partir de qualquer aplicativo ou jogo.
-*  Verificador Automático de Atualizações (Auto-Updater): Checagem assíncrona ao iniciar via API do GitHub (`releases/latest`), notificando quando houver uma nova release disponível com link direto.
 *  Lembretes e Timer com Alerta Sonoro: Agendamento de notificações com avisos visuais silenciosos e reprodução do efeito sonoro bell.wav exclusivamente no momento de término do tempo.
 
 ---
 
 ## Tecnologias Utilizadas
 
-*  Backend: Rust - Performance extrema, segurança de memória e integração nativa com o sistema operacional.
-*  Shell e Core: Tauri v2 - Orquestração de janelas, system tray, menus nativos, atalhos globais e comunicação IPC assíncrona.
+*  Backend: Rust - Performance extrema, segurança de memória, `sysinfo` para monitoramento de hardware e integração nativa com o SO.
+*  Shell e Core: Tauri v2 - Orquestração de janelas, system tray, atalhos globais (`tauri-plugin-global-shortcut`), menus nativos e comunicação IPC assíncrona.
 *  Frontend: TypeScript, HTML5 e CSS3 nativo (Vanilla MPA - sem sobrecarga de frameworks).
 *  Inteligência Artificial: Google Gemini API (Endpoint v1beta / modelo gemini-3.8-flash).
-*  Áudio: HTML5 Audio API integrado via bundling estático do Vite (bell.wav).
+*  Áudio: HTML5 Audio API integrado via bundling estático do Vite (notification.wav).
 *  Empacotador: Vite - Compilação rápida e gestão otimizada de assets.
 
 ---
@@ -73,18 +72,18 @@ MiiSideKick/
 ├── src-tauri/                 # Backend nativo em Rust
 │   ├── src/
 │   │   ├── main.rs            # Ciclo de vida, pré-carregamento de janelas e System Tray
-│   │   ├── comandos.rs        # Chamadas da API Gemini, organizador, limpeza e I/O
-│   │   └── gatilhos.rs        # Motor proativo de background, saúde do sistema e auto-updater
+│   ├── comandos.rs        # Chamadas da API Gemini, otimização de RAM, organizador e I/O
+│   │   └── gatilhos.rs        # Motor proativo de background, monitor de RAM e auto-updater
 │   ├── tauri.conf.json        # Configuração de permissões, janelas e bundles
-│   └── Cargo.toml             # Dependências do ecossistema Rust (tauri-plugin-global-shortcut)
+│   └── Cargo.toml             # Dependências do ecossistema Rust (sysinfo, tauri-plugin-global-shortcut)
 ├── src/                       # Frontend da aplicação
-│   ├── assets/                # Recursos visuais e áudio (sprites de reações, mii.png, audio/bell.wav)
+│   ├── assets/                # Recursos visuais e áudio (sprites, mii.png, audio/notification.wav)
 │   ├── css/                   # Folhas de estilo (setup.css, notificacao.css, global.css)
 │   ├── notificacao/           # Balão flutuante de alertas, áudio e fala do avatar
 │   ├── pergunta/              # Janela rápida de envio de perguntas ao Mii
 │   ├── timer/                 # Janela de configuração de lembretes
-│   ├── index.html             # Janela de Setup e Onboarding (Frutiger Aero)
-│   └── main.ts                # Lógica, preferências proativas e persistência da tela de configurações
+│   ├── index.html             # Janela de Setup, Onboarding e Seleção de Idioma (Frutiger Aero)
+│   └── main.ts                # Lógica e persistência da tela de configurações
 └── vite.config.ts             # Configuração de bundling Multi-Page Application (MPA)
 ```
 

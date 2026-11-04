@@ -52,7 +52,8 @@ fn main() {
             comandos::salvar_configuracoes,
             comandos::perguntar_ao_mii,
             comandos::abrir_pergunta,
-            comandos::limpar_historico_conversa
+            comandos::limpar_historico_conversa,
+            comandos::limpar_cache_ram
         ])
         .setup(|app| {
             // Inicializa o motor de gatilhos proativos e checagem de updates
@@ -158,16 +159,58 @@ fn main() {
             }
 
             // CONFIGURAÇÃO DA BANDEJA DO SISTEMA
+            let cfg = comandos::carregar_configuracoes();
+            let is_en = cfg.idioma == "en";
 
-            let show_i = MenuItem::with_id(app, "show", "⚙️ Abrir Setup", true, None::<&str>)?;
-            let pergunta_i =
-                MenuItem::with_id(app, "pergunta", "💬 Conversar com o Mii", true, None::<&str>)?;
-            let timer_i = MenuItem::with_id(app, "timer", "⏱️ Novo Lembrete", true, None::<&str>)?;
-            let organiza_i =
-                MenuItem::with_id(app, "organiza", "📁 Organizar Arquivos", true, None::<&str>)?;
-            let faxina_i =
-                MenuItem::with_id(app, "faxina", "🧹 Limpar Lixo do PC", true, None::<&str>)?;
-            let quit_i = MenuItem::with_id(app, "quit", "❌ Sair", true, None::<&str>)?;
+            let show_i = MenuItem::with_id(
+                app,
+                "show",
+                if is_en { "⚙️ Open Setup" } else { "⚙️ Abrir Setup" },
+                true,
+                None::<&str>,
+            )?;
+            let pergunta_i = MenuItem::with_id(
+                app,
+                "pergunta",
+                if is_en { "💬 Chat with Mii" } else { "💬 Conversar com o Mii" },
+                true,
+                None::<&str>,
+            )?;
+            let timer_i = MenuItem::with_id(
+                app,
+                "timer",
+                if is_en { "⏱️ New Reminder" } else { "⏱️ Novo Lembrete" },
+                true,
+                None::<&str>,
+            )?;
+            let organiza_i = MenuItem::with_id(
+                app,
+                "organiza",
+                if is_en { "📁 Organize Files" } else { "📁 Organizar Arquivos" },
+                true,
+                None::<&str>,
+            )?;
+            let faxina_i = MenuItem::with_id(
+                app,
+                "faxina",
+                if is_en { "🧹 Clean Junk Files" } else { "🧹 Limpar Lixo do PC" },
+                true,
+                None::<&str>,
+            )?;
+            let otimizar_ram_i = MenuItem::with_id(
+                app,
+                "otimizar_ram",
+                if is_en { "⚡ Optimize RAM" } else { "⚡ Otimizar RAM" },
+                true,
+                None::<&str>,
+            )?;
+            let quit_i = MenuItem::with_id(
+                app,
+                "quit",
+                if is_en { "❌ Quit" } else { "❌ Sair" },
+                true,
+                None::<&str>,
+            )?;
 
             let menu = Menu::with_items(
                 app,
@@ -177,6 +220,7 @@ fn main() {
                     &timer_i,
                     &organiza_i,
                     &faxina_i,
+                    &otimizar_ram_i,
                     &quit_i,
                 ],
             )?;
@@ -209,6 +253,7 @@ fn main() {
                     }
                     "faxina" => comandos::limpar_lixo_pc(app.clone()),
                     "organiza" => comandos::organizar_downloads(app.clone()),
+                    "otimizar_ram" => comandos::limpar_cache_ram(app.clone()),
                     _ => {}
                 })
                 .on_tray_icon_event(|tray, event| {

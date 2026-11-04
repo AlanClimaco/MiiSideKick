@@ -4,6 +4,29 @@ const inputPergunta = document.getElementById("inputPergunta") as HTMLInputEleme
 const btnEnviar = document.getElementById("btnEnviar");
 const btnFechar = document.getElementById("btnFechar");
 
+async function aplicarIdioma() {
+    try {
+        const config: any = await invoke("carregar_configuracoes");
+        const isEn = config && config.idioma === "en";
+        const titleEl = document.querySelector(".pergunta-title");
+        if (titleEl) {
+            titleEl.textContent = isEn ? "Chat with Mii" : "Conversar com o Mii";
+        }
+        if (inputPergunta) {
+            inputPergunta.placeholder = isEn ? "Ask Mii anything..." : "Pergunte algo ao Mii...";
+            inputPergunta.setAttribute("aria-label", isEn ? "Question for Mii" : "Pergunta para o Mii");
+        }
+        if (btnEnviar) {
+            btnEnviar.title = isEn ? "Ask" : "Perguntar";
+            btnEnviar.setAttribute("aria-label", isEn ? "Send question" : "Enviar pergunta");
+        }
+        if (btnFechar) {
+            btnFechar.title = isEn ? "Close" : "Fechar";
+            btnFechar.setAttribute("aria-label", isEn ? "Close chat" : "Fechar conversa");
+        }
+    } catch {}
+}
+
 async function enviarPergunta() {
     if (!inputPergunta) return;
     const texto = inputPergunta.value.trim();
@@ -33,6 +56,9 @@ btnFechar?.addEventListener("click", async () => {
     await invoke("esconder_pergunta");
 });
 
+aplicarIdioma();
+
 window.addEventListener("focus", () => {
+    aplicarIdioma();
     inputPergunta?.focus();
 });

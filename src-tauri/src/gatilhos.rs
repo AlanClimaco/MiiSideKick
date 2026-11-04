@@ -3,7 +3,7 @@ use std::sync::Mutex;
 use std::time::{Duration, Instant};
 use tauri::AppHandle;
 
-use crate::comandos::{self, disparar_notificacao};
+use crate::comandos::{self, disparar_notificacao, disparar_notificacao_com_acao};
 
 /// Lista de curiosidades locais para fallback offline ou quando não há chave de API.
 pub const CURIOSIDADES_OFFLINE: &[(&str, &str)] = &[
@@ -57,6 +57,58 @@ pub const CURIOSIDADES_OFFLINE: &[(&str, &str)] = &[
     ),
 ];
 
+/// Lista de curiosidades locais em inglês para fallback offline ou quando não há chave de API.
+pub const CURIOSIDADES_OFFLINE_EN: &[(&str, &str)] = &[
+    (
+        "In 1518, a mysterious choreomania epidemic made hundreds of people dance uncontrollably for weeks in Strasbourg.",
+        "explicando",
+    ),
+    (
+        "The inventor of the Frisbee was cremated and his ashes were turned into Frisbees after his death.",
+        "normal",
+    ),
+    (
+        "Bananas are slightly radioactive because they contain potassium-40. But you would need to eat 10 million at once to suffer any harm.",
+        "feliz",
+    ),
+    (
+        "Crows can recognize human faces and hold grudges against specific individuals for years.",
+        "assustado",
+    ),
+    (
+        "The shortest war in history lasted only 38 minutes, fought between the United Kingdom and Zanzibar in 1896.",
+        "normal",
+    ),
+    (
+        "Pure honey never spoils. Archaeologists have found 3,000-year-old honey in Egyptian tombs that is still completely edible.",
+        "feliz",
+    ),
+    (
+        "Octopuses have three hearts and their blood is blue because of copper-based hemocyanin.",
+        "explicando",
+    ),
+    (
+        "In 1983, Stanislav Petrov averted a global nuclear war by correctly deducing that the missile radar alert was a false alarm.",
+        "assustado",
+    ),
+    (
+        "Sharks existed on Earth before trees and before Saturn had rings.",
+        "normal",
+    ),
+    (
+        "The inventor of the breathalyzer was arrested years later for driving under the influence.",
+        "bocejo",
+    ),
+    (
+        "Ants never sleep in the human sense and can carry up to 50 times their own body weight.",
+        "explicando",
+    ),
+    (
+        "Male seahorses are the ones that get pregnant and give birth to hundreds of babies.",
+        "feliz",
+    ),
+];
+
 /// Compara versão remota com a versão local da aplicação seguindo semver simples.
 pub fn comparar_versoes(remota: &str, local: &str) -> Ordering {
     let parse = |v: &str| -> Vec<u64> {
@@ -84,7 +136,7 @@ struct GithubRelease {
 }
 
 /// Verifica se há nova versão publicada no repositório do GitHub.
-pub fn checar_atualizacoes_github(app: &AppHandle) {
+pub fn checar_atualizacoes_github(app: &AppHandle, is_en: bool) {
     let url = "https://api.github.com/repos/AlanClimaco/MiiSideKick/releases/latest";
     let client = reqwest::blocking::Client::builder()
         .timeout(Duration::from_secs(8))
@@ -106,16 +158,24 @@ pub fn checar_atualizacoes_github(app: &AppHandle) {
             if let Ok(release) = res.json::<GithubRelease>() {
                 let versao_local = env!("CARGO_PKG_VERSION");
                 if comparar_versoes(&release.tag_name, versao_local) == Ordering::Greater {
-                    let msg = format!(
-                        "Nova versão disponível: {}!\nClique abaixo para conferir as novidades.",
-                        release.tag_name
-                    );
+                    let msg = if is_en {
+                        format!(
+                            "New version available: {}!\nClick below to check out what's new.",
+                            release.tag_name
+                        )
+                    } else {
+                        format!(
+                            "Nova versão disponível: {}!\nClique abaixo para conferir as novidades.",
+                            release.tag_name
+                        )
+                    };
+                    let rotulo = if is_en { "View Update" } else { "Ver Atualização" };
                     disparar_notificacao(
                         app,
                         &msg,
                         "feliz",
                         Some(release.html_url),
-                        Some("Ver Atualização".to_string()),
+                        Some(rotulo.to_string()),
                         false,
                         true,
                     );
@@ -194,24 +254,44 @@ pub fn obter_curiosidade_proativa(
     limite_chars: u32,
     personalidade: &str,
     indice_fallback: usize,
+    idioma: &str,
 ) -> (String, String) {
-    if !api_key.trim().is_empty() {
-        let tom = match personalidade {
-            "hostil" | "sarcastico" => {
-                "Adote um tom de humor negro, mórbido, ácido e sarcasmo inteligente (fatos bizarros, mortes cômicas ou ironias da história). ATENÇÃO: NUNCA xingue nem ofenda o usuário diretamente, pois ele não fez pergunta alguma; direcione o cinismo e deboche exclusivamente ao fato narrado."
-            }
-            "educado" => "Seja extremamente educado, formal, paciente e gentil.",
-            "engracado" => "Seja muito bem-humorado, brincalhão, faça piadinhas leves e trocadilhos.",
-            "direto" => "Seja 100% sério, técnico, conciso e direto ao ponto.",
-            _ => "Seja equilibrado, curioso, amigável e descontraído.",
-        };
+    let is_en = idioma.trim().eq_ignore_ascii_case("en");
 
-        let prompt = format!(
-            "Você é o MiiSideKick. Conte uma curiosidade curta, curiosa e fascinante em português (ciência, história, fatos bizarros ou ironias cotidianas). \
-            Instrução de tom da personalidade: {tom} \
-            Tamanho máximo ESTRITO: {limite_chars} caracteres. \
-            Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<texto>\"}} sem markdown."
-        );
+    if !api_key.trim().is_empty() {
+        let prompt = if is_en {
+            let t = match personalidade {
+                "hostil" | "sarcastico" => {
+                    "Adopt a tone of dark humor, morbid wit, sarcasm, and irony (bizarre historical facts, ironic deaths, cosmic absurdities). NOTE: NEVER insult or curse at the user directly, as they did not ask any question; direct cynicism and sarcasm strictly at the story or fact itself."
+                }
+                "educado" => "Be extremely polite, formal, patient, and courteous.",
+                "engracado" => "Be funny, witty, playful, and crack lighthearted jokes and puns.",
+                "direto" => "Be 100% serious, technical, concise, and straight to the point.",
+                _ => "Be balanced, curious, friendly, and engaging.",
+            };
+            format!(
+                "You are MiiSideKick. Tell a short, fascinating curiosity in English (science, history, bizarre facts, or everyday ironies). \
+                Tone instruction: {t} \
+                STRICT maximum length: {limite_chars} characters. \
+                STRICTLY return a JSON in the format: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<text>\"}} without markdown."
+            )
+        } else {
+            let t = match personalidade {
+                "hostil" | "sarcastico" => {
+                    "Adote um tom de humor negro, mórbido, ácido e sarcasmo inteligente (fatos bizarros, mortes cômicas ou ironias da história). ATENÇÃO: NUNCA xingue nem ofenda o usuário diretamente, pois ele não fez pergunta alguma; direcione o cinismo e deboche exclusivamente ao fato narrado."
+                }
+                "educado" => "Seja extremamente educado, formal, paciente e gentil.",
+                "engracado" => "Seja muito bem-humorado, brincalhão, faça piadinhas leves e trocadilhos.",
+                "direto" => "Seja 100% sério, técnico, conciso e direto ao ponto.",
+                _ => "Seja equilibrado, curioso, amigável e descontraído.",
+            };
+            format!(
+                "Você é o MiiSideKick. Conte uma curiosidade curta, curiosa e fascinante em português (ciência, história, fatos bizarros ou ironias cotidianas). \
+                Instrução de tom da personalidade: {t} \
+                Tamanho máximo ESTRITO: {limite_chars} caracteres. \
+                Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<texto>\"}} sem markdown."
+            )
+        };
 
         let url = format!(
             "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
@@ -255,8 +335,13 @@ pub fn obter_curiosidade_proativa(
     }
 
     // Fallback offline
-    let idx = indice_fallback % CURIOSIDADES_OFFLINE.len();
-    let (texto, reacao) = CURIOSIDADES_OFFLINE[idx];
+    let lista = if is_en {
+        CURIOSIDADES_OFFLINE_EN
+    } else {
+        CURIOSIDADES_OFFLINE
+    };
+    let idx = indice_fallback % lista.len();
+    let (texto, reacao) = lista[idx];
     (texto.to_string(), reacao.to_string())
 }
 
@@ -267,6 +352,8 @@ struct EstadoMotor {
     ultimo_alerta_bem_estar: Instant,
     ultimo_alerta_curiosidade: Instant,
     ultimo_check_updater: Option<Instant>,
+    ultimo_alerta_ram: Option<Instant>,
+    leituras_ram_alta: usize,
     contador_bem_estar: usize,
     indice_curiosidade: usize,
 }
@@ -290,6 +377,8 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
             ultimo_alerta_bem_estar: Instant::now(),
             ultimo_alerta_curiosidade: Instant::now(),
             ultimo_check_updater: None,
+            ultimo_alerta_ram: None,
+            leituras_ram_alta: 0,
             contador_bem_estar: 0,
             indice_curiosidade: 0,
         };
@@ -299,6 +388,24 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
 
         loop {
             let config = comandos::carregar_configuracoes();
+            let is_en = config.idioma == "en";
+
+            // 0. Monitoramento contínuo de RAM do sistema
+            let mut sys = sysinfo::System::new();
+            sys.refresh_memory();
+            let total_ram = sys.total_memory();
+            let used_ram = sys.used_memory();
+            let pct_ram = if total_ram > 0 {
+                (used_ram as f64 / total_ram as f64) * 100.0
+            } else {
+                0.0
+            };
+
+            if pct_ram >= 85.0 {
+                estado.leituras_ram_alta = estado.leituras_ram_alta.saturating_add(1);
+            } else {
+                estado.leituras_ram_alta = 0;
+            }
 
             // Intervalos baseados na frequência configurada
             let (cooldown_global_minutos, bem_estar_minutos, curiosidade_minutos) =
@@ -318,7 +425,7 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
 
             if deve_checar_update {
                 estado.ultimo_check_updater = Some(agora);
-                checar_atualizacoes_github(&app);
+                checar_atualizacoes_github(&app, is_en);
             }
 
             // 2. Cooldown anti-spam global entre alertas na tela
@@ -328,9 +435,35 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
             if !em_cooldown_global {
                 let mut disparou = false;
 
-                // 2.1 Categoria 1: Manutenção do Sistema (Lixeira e Downloads)
+                // 2.1 Categoria 1: Manutenção do Sistema (RAM, Lixeira e Downloads)
                 if config.alerta_manutencao && !disparou {
-                    let pode_lixeira = match estado.ultimo_alerta_lixeira {
+                    // Verificação de RAM alta contínua (>= 85% por pelo menos 2 checagens consecutivas)
+                    let pode_ram = match estado.ultimo_alerta_ram {
+                        None => true,
+                        Some(inst) => agora.duration_since(inst) >= Duration::from_secs(30 * 60),
+                    };
+
+                    if pode_ram && estado.leituras_ram_alta >= 2 {
+                        estado.ultimo_alerta_ram = Some(agora);
+                        estado.ultimo_disparo_global = agora;
+                        disparou = true;
+                        let msg = if is_en {
+                            "RAM usage reached 85%. Would you like to optimize memory now?"
+                        } else {
+                            "O uso de memória RAM está em 85%. Deseja otimizar o sistema agora?"
+                        };
+                        let rotulo = if is_en { "Optimize RAM" } else { "Otimizar RAM" };
+                        disparar_notificacao_com_acao(
+                            &app,
+                            msg,
+                            "normal",
+                            Some("limpar_cache_ram".to_string()),
+                            Some(rotulo.to_string()),
+                        );
+                    }
+
+                    if !disparou {
+                        let pode_lixeira = match estado.ultimo_alerta_lixeira {
                         None => true,
                         Some(inst) => agora.duration_since(inst) >= Duration::from_secs(2 * 3600),
                     };
@@ -339,9 +472,14 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                         estado.ultimo_alerta_lixeira = Some(agora);
                         estado.ultimo_disparo_global = agora;
                         disparou = true;
+                        let msg = if is_en {
+                            "The Recycle Bin is getting full! Want to do a quick cleanup?"
+                        } else {
+                            "A lixeira do sistema está bem cheia! Quer fazer uma faxina rápida?"
+                        };
                         disparar_notificacao(
                             &app,
-                            "A lixeira do sistema está bem cheia! Quer fazer uma faxina rápida?",
+                            msg,
                             "explicando",
                             None,
                             None,
@@ -360,9 +498,14 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                             estado.ultimo_alerta_downloads = Some(agora);
                             estado.ultimo_disparo_global = agora;
                             disparou = true;
+                            let msg = if is_en {
+                                "Your Downloads folder has piled up. I can organize it if you want!"
+                            } else {
+                                "Sua pasta de Downloads acumulou muitos arquivos. Posso organizá-los se quiser!"
+                            };
                             disparar_notificacao(
                                 &app,
-                                "Sua pasta de Downloads acumulou muitos arquivos. Posso organizá-los se quiser!",
+                                msg,
                                 "feliz",
                                 None,
                                 None,
@@ -372,6 +515,7 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                         }
                     }
                 }
+            }
 
                 // 2.2 Categoria 2: Interação & Bem-Estar (Saúde/Água/Postura e Curiosidades)
                 if config.alerta_interacao_bem_estar && !disparou {
@@ -381,7 +525,13 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                         estado.ultimo_disparo_global = agora;
                         disparou = true;
 
-                        let msg = if estado.contador_bem_estar % 2 == 0 {
+                        let msg = if is_en {
+                            if estado.contador_bem_estar % 2 == 0 {
+                                "Time to hydrate! Drink some water to keep your focus."
+                            } else {
+                                "Posture check! Straighten your back and relax your shoulders for a moment."
+                            }
+                        } else if estado.contador_bem_estar % 2 == 0 {
                             "Hora de se hidratar! Beba um pouco de água para manter o foco."
                         } else {
                             "Lembrete de postura! Ajuste a coluna e relaxe os ombros por um instante."
@@ -402,6 +552,7 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                                 config.limite_caracteres,
                                 &config.personalidade,
                                 estado.indice_curiosidade,
+                                &config.idioma,
                             );
                             estado.indice_curiosidade += 1;
 
@@ -423,12 +574,35 @@ mod tests {
 
     #[test]
     fn test_comparar_versoes() {
-        assert_eq!(comparar_versoes("v1.4.0", "1.4.0"), Ordering::Equal);
+        assert_eq!(comparar_versoes("v1.5.0", "1.5.0"), Ordering::Equal);
+        assert_eq!(comparar_versoes("1.5.0", "1.4.2"), Ordering::Greater);
+        assert_eq!(comparar_versoes("1.4.2", "1.4.1"), Ordering::Greater);
         assert_eq!(comparar_versoes("1.4.1", "1.4.0"), Ordering::Greater);
         assert_eq!(comparar_versoes("v2.0.0", "1.9.9"), Ordering::Greater);
         assert_eq!(comparar_versoes("v1.3.5", "1.4.0"), Ordering::Less);
         assert_eq!(comparar_versoes("1.4.0", "v1.4.1"), Ordering::Less);
         assert_eq!(comparar_versoes("1.4.0-beta", "1.4.0"), Ordering::Equal);
+    }
+
+    #[test]
+    fn test_mensagens_alerta_ram() {
+        let msg_pt = "O uso de memória RAM está em 85%. Deseja otimizar o sistema agora?";
+        let rotulo_pt = "Otimizar RAM";
+        let msg_en = "RAM usage reached 85%. Would you like to optimize memory now?";
+        let rotulo_en = "Optimize RAM";
+
+        assert_eq!(msg_pt, "O uso de memória RAM está em 85%. Deseja otimizar o sistema agora?");
+        assert_eq!(rotulo_pt, "Otimizar RAM");
+        assert_eq!(msg_en, "RAM usage reached 85%. Would you like to optimize memory now?");
+        assert_eq!(rotulo_en, "Optimize RAM");
+    }
+
+    #[test]
+    fn test_sysinfo_memoria_disponivel() {
+        let mut sys = sysinfo::System::new();
+        sys.refresh_memory();
+        assert!(sys.total_memory() > 0);
+        assert!(sys.used_memory() > 0);
     }
 
     #[test]
@@ -440,16 +614,35 @@ mod tests {
             assert!(["normal", "feliz", "frustrado", "assustado", "explicando", "bocejo", "lambendo", "raiva"]
                 .contains(reacao));
         }
+
+        assert!(!CURIOSIDADES_OFFLINE_EN.is_empty());
+        assert_eq!(CURIOSIDADES_OFFLINE_EN.len(), CURIOSIDADES_OFFLINE.len());
+        for (texto, reacao) in CURIOSIDADES_OFFLINE_EN {
+            assert!(!texto.trim().is_empty());
+            assert!(texto.chars().count() <= 200);
+            assert!(["normal", "feliz", "frustrado", "assustado", "explicando", "bocejo", "lambendo", "raiva"]
+                .contains(reacao));
+        }
     }
 
     #[test]
     fn test_obter_curiosidade_proativa_offline() {
-        let (texto, reacao) = obter_curiosidade_proativa("", 70, "espelho", 0);
-        assert!(!texto.is_empty());
-        assert!(!reacao.is_empty());
+        let (texto_pt, reacao_pt) = obter_curiosidade_proativa("", 70, "espelho", 0, "pt");
+        assert!(!texto_pt.is_empty());
+        assert!(!reacao_pt.is_empty());
 
-        let (texto_hostil, reacao_hostil) = obter_curiosidade_proativa("", 70, "hostil", 1);
-        assert!(!texto_hostil.is_empty());
-        assert!(!reacao_hostil.is_empty());
+        let (texto_en, reacao_en) = obter_curiosidade_proativa("", 70, "espelho", 0, "en");
+        assert!(!texto_en.is_empty());
+        assert!(!reacao_en.is_empty());
+        assert_ne!(texto_pt, texto_en);
+
+        let (texto_hostil_pt, reacao_hostil_pt) = obter_curiosidade_proativa("", 70, "hostil", 1, "pt");
+        assert!(!texto_hostil_pt.is_empty());
+        assert!(!reacao_hostil_pt.is_empty());
+
+        let (texto_hostil_en, reacao_hostil_en) = obter_curiosidade_proativa("", 70, "hostil", 1, "en");
+        assert!(!texto_hostil_en.is_empty());
+        assert!(!reacao_hostil_en.is_empty());
+        assert_ne!(texto_hostil_pt, texto_hostil_en);
     }
 }

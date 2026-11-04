@@ -25,6 +25,10 @@ pub struct NotificacaoPayload {
     pub pode_responder: bool,
     #[serde(default)]
     pub tocar_som: bool,
+    #[serde(default)]
+    pub acao: Option<String>,
+    #[serde(default)]
+    pub acao_rotulo: Option<String>,
 }
 
 impl NotificacaoPayload {
@@ -36,6 +40,8 @@ impl NotificacaoPayload {
             &self.link_rotulo,
             self.pode_responder,
             self.tocar_som,
+            &self.acao,
+            &self.acao_rotulo,
         ))
         .expect("Os argumentos da notificação devem ser serializáveis");
 
@@ -100,13 +106,59 @@ pub fn disparar_notificacao(
     pode_responder: bool,
     tocar_som: bool,
 ) {
+    disparar_notificacao_completa(
+        app,
+        texto,
+        tipo,
+        link,
+        link_rotulo,
+        pode_responder,
+        tocar_som,
+        None,
+        None,
+    );
+}
+
+pub fn disparar_notificacao_com_acao(
+    app: &AppHandle,
+    texto: &str,
+    tipo: &str,
+    acao: Option<String>,
+    acao_rotulo: Option<String>,
+) {
+    disparar_notificacao_completa(
+        app,
+        texto,
+        tipo,
+        None,
+        None,
+        false,
+        false,
+        acao,
+        acao_rotulo,
+    );
+}
+
+pub fn disparar_notificacao_completa(
+    app: &AppHandle,
+    texto: &str,
+    tipo: &str,
+    link: Option<String>,
+    link_rotulo: Option<String>,
+    pode_responder: bool,
+    tocar_som: bool,
+    acao: Option<String>,
+    acao_rotulo: Option<String>,
+) {
     let payload = NotificacaoPayload {
         texto: texto.to_string(),
         tipo: tipo.to_string(),
-        link: link.clone(),
-        link_rotulo: link_rotulo.clone(),
+        link,
+        link_rotulo,
         pode_responder,
         tocar_som,
+        acao,
+        acao_rotulo,
     };
 
     if let Ok(mut mem) = ULTIMA_NOTIFICACAO.lock() {
@@ -121,10 +173,123 @@ pub fn disparar_notificacao(
     }
 }
 
+#[cfg(target_os = "windows")]
+unsafe fn otimizar_working_sets() {
+    #[link(name = "kernel32")]
+    extern "system" {
+        fn GetCurrentProcess() -> *mut std::ffi::c_void;
+        fn SetProcessWorkingSetSize(
+            hProcess: *mut std::ffi::c_void,
+            dwMinimumWorkingSetSize: usize,
+            dwMaximumWorkingSetSize: usize,
+        ) -> i32;
+        fn OpenProcess(
+            dwDesiredAccess: u32,
+            bInheritHandle: i32,
+            dwProcessId: u32,
+        ) -> *mut std::ffi::c_void;
+        fn CloseHandle(hObject: *mut std::ffi::c_void) -> i32;
+    }
+
+    #[link(name = "psapi")]
+    extern "system" {
+        fn EmptyWorkingSet(hProcess: *mut std::ffi::c_void) -> i32;
+    }
+
+    let current = GetCurrentProcess();
+    let _ = EmptyWorkingSet(current);
+    let _ = SetProcessWorkingSetSize(current, usize::MAX, usize::MAX);
+
+    // PROCESS_QUERY_INFORMATION (0x0400) | PROCESS_SET_QUOTA (0x0100)
+    const ACCESS: u32 = 0x0400 | 0x0100;
+    let mut sys = sysinfo::System::new();
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::All, true);
+    for (&pid, _) in sys.processes() {
+        let raw_pid = pid.as_u32();
+        if raw_pid == 0 || raw_pid == 4 {
+            continue;
+        }
+        let handle = OpenProcess(ACCESS, 0, raw_pid);
+        if !handle.is_null() {
+            let _ = EmptyWorkingSet(handle);
+            let _ = SetProcessWorkingSetSize(handle, usize::MAX, usize::MAX);
+            let _ = CloseHandle(handle);
+        }
+    }
+}
+
+pub fn otimizar_memoria_sistema() -> (u64, u64) {
+    let mut sys = sysinfo::System::new();
+    sys.refresh_memory();
+    let antes = sys.used_memory();
+
+    #[cfg(target_os = "windows")]
+    unsafe {
+        otimizar_working_sets();
+    }
+
+    #[cfg(target_os = "linux")]
+    unsafe {
+        extern "C" {
+            fn malloc_trim(pad: usize) -> i32;
+        }
+        let _ = malloc_trim(0);
+    }
+
+    std::thread::sleep(std::time::Duration::from_millis(250));
+    sys.refresh_memory();
+    let depois = sys.used_memory();
+
+    (antes, depois)
+}
+
+#[tauri::command]
+pub fn limpar_cache_ram(app: AppHandle) {
+    let cfg = carregar_configuracoes();
+    let is_en = cfg.idioma == "en";
+    let msg_inicio = if is_en {
+        "Optimizing system RAM..."
+    } else {
+        "Otimizando memória RAM do sistema..."
+    };
+    disparar_notificacao(&app, msg_inicio, "normal", None, None, false, false);
+
+    std::thread::spawn(move || {
+        let (antes, depois) = otimizar_memoria_sistema();
+        let liberado_bytes = antes.saturating_sub(depois);
+        let liberado_mb = liberado_bytes / (1024 * 1024);
+
+        std::thread::sleep(std::time::Duration::from_millis(1000));
+
+        let msg_fim = if is_en {
+            if liberado_mb > 0 {
+                format!("RAM successfully optimized!\n{} MB freed up.", liberado_mb)
+            } else {
+                "RAM successfully optimized!".to_string()
+            }
+        } else {
+            if liberado_mb > 0 {
+                format!("Memória RAM otimizada com sucesso!\n{} MB liberados.", liberado_mb)
+            } else {
+                "Memória RAM otimizada com sucesso!".to_string()
+            }
+        };
+
+        disparar_notificacao(&app, &msg_fim, "feliz", None, None, false, false);
+    });
+}
+
 #[tauri::command]
 pub fn limpar_lixo_pc(app: AppHandle) {
+    let cfg = carregar_configuracoes();
+    let is_en = cfg.idioma == "en";
+    let msg_inicio = if is_en {
+        "Starting system cleanup..."
+    } else {
+        "Iniciando a faxina do sistema..."
+    };
     // AVISA IMEDIATAMENTE QUANDO COMEÇA
-    disparar_notificacao(&app, "Iniciando a faxina do sistema...", "normal", None, None, false, false);
+    disparar_notificacao(&app, msg_inicio, "normal", None, None, false, false);
 
     std::thread::spawn(move || {
         #[cfg(target_os = "windows")]
@@ -167,9 +332,18 @@ pub fn limpar_lixo_pc(app: AppHandle) {
 
         // ATUALIZA A TELA COM O RESULTADO
         if apagados == 0 {
-            disparar_notificacao(&app, "Lixeira já estava vazia. Tudo limpo!", "frustrado", None, None, false, false);
+            let msg_vazio = if is_en {
+                "Recycle bin was already empty. All clean!"
+            } else {
+                "Lixeira já estava vazia. Tudo limpo!"
+            };
+            disparar_notificacao(&app, msg_vazio, "frustrado", None, None, false, false);
         } else {
-            let msg = format!("Faxina feita!\n{} arquivos inúteis removidos.", apagados);
+            let msg = if is_en {
+                format!("Cleanup complete!\n{} useless files removed.", apagados)
+            } else {
+                format!("Faxina feita!\n{} arquivos inúteis removidos.", apagados)
+            };
             disparar_notificacao(&app, &msg, "tranquilo", None, None, false, false);
         }
     });
@@ -477,8 +651,15 @@ fn mover_arquivo_seguro(origem: &Path, destino: &Path) -> std::io::Result<()> {
 
 #[tauri::command]
 pub fn organizar_downloads(app: AppHandle) {
+    let cfg = carregar_configuracoes();
+    let is_en = cfg.idioma == "en";
+    let msg_inicio = if is_en {
+        "Starting file organization..."
+    } else {
+        "Iniciando organização de arquivos..."
+    };
     // Avisa que começou
-    disparar_notificacao(&app, "Iniciando organização de arquivos...", "normal", None, None, false, false);
+    disparar_notificacao(&app, msg_inicio, "normal", None, None, false, false);
 
     // Joga pra background thread para não travar a bandeja!
     std::thread::spawn(move || {
@@ -560,9 +741,18 @@ pub fn organizar_downloads(app: AppHandle) {
         std::thread::sleep(std::time::Duration::from_millis(1500));
 
         if movidos == 0 {
-            disparar_notificacao(&app, "Tudo limpo! Não havia o que organizar.", "frustrado", None, None, false, false);
+            let msg_vazio = if is_en {
+                "All clean! Nothing to organize."
+            } else {
+                "Tudo limpo! Não havia o que organizar."
+            };
+            disparar_notificacao(&app, msg_vazio, "frustrado", None, None, false, false);
         } else {
-            let msg = format!("Mágica feita!\n{} arquivos organizados.", movidos);
+            let msg = if is_en {
+                format!("Magic done!\n{} files organized.", movidos)
+            } else {
+                format!("Mágica feita!\n{} arquivos organizados.", movidos)
+            };
             disparar_notificacao(&app, &msg, "tranquilo", None, None, false, false);
         }
     });
@@ -570,8 +760,17 @@ pub fn organizar_downloads(app: AppHandle) {
 
 #[tauri::command]
 pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
-    let msg_inicio = if minutos == 1 {
-        format!("Ok! Te aviso em 1 minuto.")
+    let cfg = carregar_configuracoes();
+    let is_en = cfg.idioma == "en";
+
+    let msg_inicio = if is_en {
+        if minutos == 1 {
+            "Got it! I will remind you in 1 minute.".to_string()
+        } else {
+            format!("Got it! I will remind you in {} minutes.", minutos)
+        }
+    } else if minutos == 1 {
+        "Ok! Te aviso em 1 minuto.".to_string()
     } else {
         format!("Ok! Te aviso em {} minutos.", minutos)
     };
@@ -586,7 +785,26 @@ pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
 
         std::thread::sleep(std::time::Duration::from_secs(metade_segundos));
 
-        let msg_metade = if minutos == 1 {
+        let msg_metade = if is_en {
+            if minutos == 1 {
+                format!("Heads up! Half a minute left for:\n{}", mensagem)
+            } else if minutos == 3 {
+                format!("Heads up! 1 minute and a half left for:\n{}", mensagem)
+            } else if minutos % 2 != 0 {
+                let inteira = minutos / 2;
+                format!(
+                    "Heads up! {} minutes and a half left for:\n{}",
+                    inteira, mensagem
+                )
+            } else {
+                let metade = minutos / 2;
+                if metade == 1 {
+                    format!("Heads up! 1 minute left for:\n{}", mensagem)
+                } else {
+                    format!("Heads up! {} minutes left for:\n{}", metade, mensagem)
+                }
+            }
+        } else if minutos == 1 {
             format!("Atenção! Falta meio minuto para:\n{}", mensagem)
         } else if minutos == 3 {
             format!("Atenção! Falta 1 minuto e meio para:\n{}", mensagem)
@@ -609,7 +827,11 @@ pub fn iniciar_timer(app: AppHandle, minutos: u64, mensagem: String) {
 
         std::thread::sleep(std::time::Duration::from_secs(resto_segundos));
 
-        let msg_final = format!("ACABOU O TEMPO!\n{}", mensagem);
+        let msg_final = if is_en {
+            format!("TIME'S UP!\n{}", mensagem)
+        } else {
+            format!("ACABOU O TEMPO!\n{}", mensagem)
+        };
         disparar_notificacao(&app_clone, &msg_final, "assustado", None, None, false, true);
     });
 }
@@ -656,6 +878,10 @@ fn default_frequencia() -> String {
     "equilibrado".to_string()
 }
 
+fn default_idioma() -> String {
+    "pt".to_string()
+}
+
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct AppConfig {
     #[serde(default)]
@@ -672,6 +898,8 @@ pub struct AppConfig {
     pub alerta_interacao_bem_estar: bool,
     #[serde(default = "default_frequencia")]
     pub frequencia_alertas: String,
+    #[serde(default = "default_idioma")]
+    pub idioma: String,
 }
 
 impl Default for AppConfig {
@@ -684,6 +912,7 @@ impl Default for AppConfig {
             alerta_manutencao: true,
             alerta_interacao_bem_estar: true,
             frequencia_alertas: default_frequencia(),
+            idioma: default_idioma(),
         }
     }
 }
@@ -708,6 +937,11 @@ pub fn carregar_configuracoes() -> AppConfig {
                         .contains(&cfg.frequencia_alertas.trim().to_lowercase().as_str())
                     {
                         cfg.frequencia_alertas = "equilibrado".to_string();
+                    }
+                    if cfg.idioma.trim().eq_ignore_ascii_case("en") {
+                        cfg.idioma = "en".to_string();
+                    } else {
+                        cfg.idioma = "pt".to_string();
                     }
                     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&conteudo) {
                         if v.get("alerta_manutencao").is_none() {
@@ -739,6 +973,7 @@ pub fn carregar_configuracoes() -> AppConfig {
         alerta_manutencao: true,
         alerta_interacao_bem_estar: true,
         frequencia_alertas: default_frequencia(),
+        idioma: default_idioma(),
     }
 }
 
@@ -754,6 +989,11 @@ pub fn salvar_configuracoes(mut config: AppConfig) -> Result<(), String> {
         .contains(&config.frequencia_alertas.trim().to_lowercase().as_str())
     {
         config.frequencia_alertas = "equilibrado".to_string();
+    }
+    if config.idioma.trim().eq_ignore_ascii_case("en") {
+        config.idioma = "en".to_string();
+    } else {
+        config.idioma = "pt".to_string();
     }
     if let Some(caminho) = obter_caminho_config() {
         if let Some(pai) = caminho.parent() {
@@ -819,21 +1059,43 @@ pub(crate) fn validar_reacao(reacao: Option<&str>) -> &'static str {
     }
 }
 
-pub(crate) fn obter_instrucao_personalidade(personalidade: &str) -> &'static str {
-    match personalidade.trim().to_lowercase().as_str() {
-        "educado" => {
+pub(crate) fn obter_instrucao_personalidade(personalidade: &str, idioma: &str) -> &'static str {
+    let idioma_norm = if idioma.trim().eq_ignore_ascii_case("en") { "en" } else { "pt" };
+    match (personalidade.trim().to_lowercase().as_str(), idioma_norm) {
+        ("educado", "en") => {
+            "MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+            Be extremely polite, formal, patient, helpful, and courteous, like an attentive butler."
+        }
+        ("educado", _) => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
             Seja extremamente educado, formal, paciente, solícito e gentil, como um mordomo atencioso."
         }
-        "engracado" => {
+        ("engracado", "en") => {
+            "MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+            Be funny, witty, playful, crack lighthearted jokes, clever puns, and give fun, lighthearted responses."
+        }
+        ("engracado", _) => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
             Seja engraçado, bem-humorado, faça piadinhas leves, trocadilhos e respostas descontraídas."
         }
-        "direto" => {
+        ("direto", "en") => {
+            "MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+            Be 100% serious, technical, straight to the point, and objective. No jokes, fluff, or banter."
+        }
+        ("direto", _) => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
             Seja 100% sério, técnico, direto ao ponto e objetivo. Não faça piadas, enrolações ou gracinhas."
         }
-        "hostil" | "sarcastico" => {
+        ("hostil" | "sarcastico", "en") => {
+            "MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+            The Mii is openly aggressive, foul-mouthed, impatient, and stressed out.\n\
+            NO ROBOTIC AI CLICHÉS: Strictly forbidden from using corny robotic AI tropes like \"need me to draw it for you?\", \"your hollow brain\", \"did you crawl out of the last century?\", or \"your mind cannot process\".\n\
+            NATURAL INTERNET PROFANITY: Use natural English internet slang and raw, unfiltered insults (e.g., dumbass, asshole, dipshit, moron, idiot, braindead, clown).\n\
+            LEAN INTO PRANKS AND TROLLS: If the user tries classic internet pranks or joke setups (e.g., \"deez nuts\", \"ligma\", \"updog\", \"who is joe?\"), NEVER give a moral lecture or say the joke is old. Beat them at their own game: drop the punchline first, turn it against them, or clap back with a savage joke humiliating the user (e.g., \"Deez nuts in your mouth, dipshit\").\n\
+            STUPID QUESTIONS / BASIC CODE: If the user asks something obvious (e.g., \"what is 5x5?\" or \"how to print in python\"), give the correct answer, but curse their intelligence and berate them for wasting API tokens and quotas on brainless crap (e.g., \"It is 25, dumbass. Are you seriously burning my API tokens just to ask me this?\").\n\
+            DIRECT INSULT REQUESTS (\"roast me\", \"insult me\"): Go hard, blunt, and completely unfiltered."
+        }
+        ("hostil" | "sarcastico", _) => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
             O Mii é abertamente agressivo, boca-suja, sem paciência e estressado.\n\
             PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA: Proibido usar frases batidas como \"quer que eu desenhe?\", \"use massinha\", \"sua cabecinha oca\", \"veio do século passado\" ou \"sua mente não processa\".\n\
@@ -842,7 +1104,12 @@ pub(crate) fn obter_instrucao_personalidade(personalidade: &str) -> &'static str
             PERGUNTAS IDIOTAS / CÓDIGO BÁSICO: Se o usuário perguntar algo óbvio (ex: \"quanto é 5x5?\" ou \"como printar em Python\"), dê a resposta correta, mas xingue a inteligência dele e reclame que ele está gastando requisições e tokens da API com besteira (ex: \"É 25, burro. É sério que tu tá gastando cota da API pra me perguntar isso?\").\n\
             PEDIDOS DIRETO DE XINGAMENTO (\"me xinga\"): Seja pesado, direto e sem filtro."
         }
-        _ => {
+        (_, "en") => {
+            "MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+            Mirror the user's tone strictly choosing between Polite, Funny, and Serious/Direct: if the user is polite, be polite; if playful or witty, be funny; if serious, technical, or blunt, be serious and direct.\n\
+            FORBIDDEN from triggering Hostile/toxic behavior."
+        }
+        (_, _) => {
             "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
             Adapte o tom do Mii ao tom do usuário alternando ESTRITAMENTE entre Educado, Engraçado e Sério/Direto: se o usuário for educado, seja educado; se for descontraído ou bem-humorado, seja engraçado; se for sério, técnico ou direto ao ponto, seja sério e direto.\n\
             PROIBIDO acionar o comportamento Hostil/ácido pesado."
@@ -855,17 +1122,25 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
     let app_clone = app.clone();
 
     std::thread::spawn(move || {
-        // Disparo imediato do aviso inicial
-        disparar_notificacao(&app_clone, "Pensando...", "normal", None, None, false, false);
-
-        // Carrega configurações para obter chave e nome
+        // Carrega configurações para obter chave, nome e idioma
         let config = carregar_configuracoes();
+        let is_en = config.idioma == "en";
+
+        // Disparo imediato do aviso inicial
+        let msg_pensando = if is_en { "Thinking..." } else { "Pensando..." };
+        disparar_notificacao(&app_clone, msg_pensando, "normal", None, None, false, false);
+
         let api_key = config.gemini_api_key.trim();
 
         if api_key.is_empty() {
+            let msg_sem_chave = if is_en {
+                "Where is my API key? Configure it in Setup!"
+            } else {
+                "Cadê minha chave de API? Configure no Setup!"
+            };
             disparar_notificacao(
                 &app_clone,
-                "Cadê minha chave de API? Configure no Setup!",
+                msg_sem_chave,
                 "frustrado",
                 None,
                 None,
@@ -876,37 +1151,62 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         }
 
         let user_name = if config.user_name.trim().is_empty() {
-            "Usuário".to_string()
+            if is_en { "User".to_string() } else { "Usuário".to_string() }
         } else {
             config.user_name.trim().to_string()
         };
 
-        let instrucao_tom = obter_instrucao_personalidade(&config.personalidade)
+        let instrucao_tom = obter_instrucao_personalidade(&config.personalidade, &config.idioma)
             .replace("{user_name}", &user_name);
 
         let limite_chars = config.limite_caracteres.clamp(30, 500);
 
-        let system_instruction = format!(
-            "Você é o MiiSideKick, um companheiro de desktop com personalidade expressiva. O nome do usuário é: {user_name}.\n\
-            USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
-            AUTORIA E CRIADOR:\n\
-            Seu criador e desenvolvedor é Alan Clímaco (portfólio: https://alanclimaco.github.io/Portfolio/). Se o usuário perguntar quem te criou, quem é seu desenvolvedor ou pedir seus projetos, mencione Alan Clímaco e forneça a URL do portfólio dele no campo 'link' com o rótulo 'Portfólio de Alan Clímaco'.\n\
-            REFERÊNCIAS EXTERNAS:\n\
-            Para perguntas complexas ou técnicas que exijam aprofundamento (como programação, Git, documentações oficiais), dê uma resposta resumida dentro do limite de caracteres e adicione a URL oficial útil no campo 'link' e o nome da fonte no campo 'link_rotulo'. Se não for necessária referência externa, deixe 'link' e 'link_rotulo' como null.\n\
-            REGRAS OBRIGATÓRIAS:\n\
-            1. {instrucao_tom}\n\
-            2. Tamanho máximo estrito: sua resposta DEVE ter no máximo {limite_chars} caracteres. Seja direto e conciso. A URL e o rótulo do link NÃO contam no limite de caracteres da resposta.\n\
-            3. Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto>\", \"link\": \"<url_ou_null>\", \"link_rotulo\": \"<rotulo_curto_ou_null>\"}} sem blocos de código markdown ou texto extra.\n\
-            4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 8 opções):\n\
-               - \"normal\": respostas neutras, simples e diretas.\n\
-               - \"feliz\": agradecimentos, elogios, gentileza e bom humor.\n\
-               - \"frustrado\": tristeza, decepção, cansaço ou falhas do sistema.\n\
-               - \"assustado\": perguntas bizarras, chocantes ou absurdas.\n\
-               - \"explicando\": quando estiver ensinando ou explicando como algo funciona.\n\
-               - \"bocejo\": tédio, preguiça, assuntos desinteressantes ou perguntas repetitivas/bobas.\n\
-               - \"lambendo\": deboche provocador (retrucando insultos do usuário com marra) ou quando o assunto for comida gostosa.\n\
-               - \"raiva\": indignação, irritação profunda, broncas ácidas ou estresse direto."
-        );
+        let system_instruction = if is_en {
+            format!(
+                "You are MiiSideKick, an expressive desktop companion. The user's name is: {user_name}.\n\
+                LANGUAGE: You MUST answer fluently in English at all times.\n\
+                MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+                AUTHORSHIP & CREATOR:\n\
+                Your creator and developer is Alan Clímaco (portfolio: https://alanclimaco.github.io/Portfolio/). If the user asks who created you, who is your developer, or asks about your projects, mention Alan Clímaco and provide his portfolio URL in the 'link' field with the label 'Alan Clímaco Portfolio'.\n\
+                EXTERNAL REFERENCES:\n\
+                For complex or technical questions requiring deeper reference (such as programming, Git, official docs), provide a concise summary within the character limit, add the official URL in the 'link' field and the source name in 'link_rotulo'. If no external reference is needed, set 'link' and 'link_rotulo' to null.\n\
+                MANDATORY RULES:\n\
+                1. {instrucao_tom}\n\
+                2. Strict maximum length: your response MUST have at most {limite_chars} characters. Be direct and concise. The URL and link label do NOT count towards the character limit.\n\
+                3. STRICTLY return a JSON in the format: {{\"reacao\": \"<reacao>\", \"resposta\": \"<text>\", \"link\": \"<url_or_null>\", \"link_rotulo\": \"<short_label_or_null>\"}} without markdown code blocks or extra text.\n\
+                4. Mood guide for the 'reacao' field (choose exactly one of the following 8 options):\n\
+                   - \"normal\": neutral, simple, direct responses.\n\
+                   - \"feliz\": compliments, thankfulness, kindness, and good mood.\n\
+                   - \"frustrado\": sadness, disappointment, fatigue, or system issues.\n\
+                   - \"assustado\": weird, shocking, or absurd questions.\n\
+                   - \"explicando\": teaching or explaining how something works.\n\
+                   - \"bocejo\": boredom, lazy moods, uninteresting or silly/repetitive questions.\n\
+                   - \"lambendo\": smug mocking comeback (firing back at user insults with attitude) or when delicious food is mentioned.\n\
+                   - \"raiva\": outrage, deep irritation, acidic scolding, or raw stress."
+            )
+        } else {
+            format!(
+                "Você é o MiiSideKick, um companheiro de desktop com personalidade expressiva. O nome do usuário é: {user_name}.\n\
+                USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
+                AUTORIA E CRIADOR:\n\
+                Seu criador e desenvolvedor é Alan Clímaco (portfólio: https://alanclimaco.github.io/Portfolio/). Se o usuário perguntar quem te criou, quem é seu desenvolvedor ou pedir seus projetos, mencione Alan Clímaco e forneça a URL do portfólio dele no campo 'link' com o rótulo 'Portfólio de Alan Clímaco'.\n\
+                REFERÊNCIAS EXTERNAS:\n\
+                Para perguntas complexas ou técnicas que exijam aprofundamento (como programação, Git, documentações oficiais), dê uma resposta resumida dentro do limite de caracteres e adicione a URL oficial útil no campo 'link' e o nome da fonte no campo 'link_rotulo'. Se não for necessária referência externa, deixe 'link' e 'link_rotulo' como null.\n\
+                REGRAS OBRIGATÓRIAS:\n\
+                1. {instrucao_tom}\n\
+                2. Tamanho máximo estrito: sua resposta DEVE ter no máximo {limite_chars} caracteres. Seja direto e conciso. A URL e o rótulo do link NÃO contam no limite de caracteres da resposta.\n\
+                3. Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto>\", \"link\": \"<url_ou_null>\", \"link_rotulo\": \"<rotulo_curto_ou_null>\"}} sem blocos de código markdown ou texto extra.\n\
+                4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 8 opções):\n\
+                   - \"normal\": respostas neutras, simples e diretas.\n\
+                   - \"feliz\": agradecimentos, elogios, gentileza e bom humor.\n\
+                   - \"frustrado\": tristeza, decepção, cansaço ou falhas do sistema.\n\
+                   - \"assustado\": perguntas bizarras, chocantes ou absurdas.\n\
+                   - \"explicando\": quando estiver ensinando ou explicando como algo funciona.\n\
+                   - \"bocejo\": tédio, preguiça, assuntos desinteressantes ou perguntas repetitivas/bobas.\n\
+                   - \"lambendo\": deboche provocador (retrucando insultos do usuário com marra) ou quando o assunto for comida gostosa.\n\
+                   - \"raiva\": indignação, irritação profunda, broncas ácidas ou estresse direto."
+            )
+        };
 
         let user_turn = serde_json::json!({
             "role": "user",
@@ -956,7 +1256,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Err(e) => {
                 let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
                 eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None, false, false);
+                let msg_falha = if is_en { "API connection failure" } else { "Falha de conexão com a API" };
+                disparar_notificacao(&app_clone, msg_falha, "frustrado", None, None, false, false);
                 return;
             }
         };
@@ -973,7 +1274,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Err(e) => {
                 let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
                 eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                disparar_notificacao(&app_clone, "Falha de conexão com a API", "frustrado", None, None, false, false);
+                let msg_falha = if is_en { "API connection failure" } else { "Falha de conexão com a API" };
+                disparar_notificacao(&app_clone, msg_falha, "frustrado", None, None, false, false);
                 return;
             }
         };
@@ -994,7 +1296,11 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 });
             let erro_limpo = erro_msg.replace(api_key, "[CHAVE_PROTEGIDA]");
             eprintln!("[Gemini API Erro {}]: {}", status, erro_limpo);
-            let msg = format!("Erro Gemini ({}): {}", status, erro_limpo);
+            let msg = if is_en {
+                format!("Gemini Error ({}): {}", status, erro_limpo)
+            } else {
+                format!("Erro Gemini ({}): {}", status, erro_limpo)
+            };
             disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false, false);
             return;
         }
@@ -1003,7 +1309,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             Ok(parsed) => parsed,
             Err(e) => {
                 eprintln!("[Gemini API]: Erro ao decodificar JSON da API: {:?}", e);
-                disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None, false, false);
+                let msg_sem_resp = if is_en { "No response from AI..." } else { "Sem resposta da IA..." };
+                disparar_notificacao(&app_clone, msg_sem_resp, "frustrado", None, None, false, false);
                 return;
             }
         };
@@ -1021,7 +1328,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
         if raw_text.is_empty() {
             eprintln!("[Gemini API]: Resposta vazia ou bloqueada");
-            disparar_notificacao(&app_clone, "Sem resposta da IA...", "frustrado", None, None, false, false);
+            let msg_sem_resp = if is_en { "No response from AI..." } else { "Sem resposta da IA..." };
+            disparar_notificacao(&app_clone, msg_sem_resp, "frustrado", None, None, false, false);
             return;
         }
 
@@ -1066,9 +1374,10 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
         let reacao = validar_reacao(gemini_resultado.reacao.as_deref());
 
+        let padrao_texto = if is_en { "Hmm, I don't know what to say...".to_string() } else { "Hmm, não sei o que dizer...".to_string() };
         let mut resposta = gemini_resultado
             .resposta
-            .unwrap_or_else(|| "Hmm, não sei o que dizer...".to_string());
+            .unwrap_or(padrao_texto);
 
         let limite = limite_chars as usize;
         if resposta.chars().count() > limite {
@@ -1108,6 +1417,8 @@ mod tests {
                 link_rotulo: Some("Referência".to_string()),
                 pode_responder,
                 tocar_som,
+                acao: None,
+                acao_rotulo: None,
             };
 
             // A leitura inicial pelo comando deve manter a mesma permissão do envio ao vivo.
@@ -1115,6 +1426,8 @@ mod tests {
             let lida: NotificacaoPayload = serde_json::from_str(&json).unwrap();
             assert_eq!(lida.pode_responder, pode_responder);
             assert_eq!(lida.tocar_som, tocar_som);
+            assert_eq!(lida.acao, None);
+            assert_eq!(lida.acao_rotulo, None);
 
             let script = payload.script_atualizacao();
             let argumentos = script
@@ -1123,13 +1436,15 @@ mod tests {
                 .strip_suffix("); }")
                 .unwrap();
             let valores: serde_json::Value = serde_json::from_str(argumentos).unwrap();
-            assert_eq!(valores.as_array().unwrap().len(), 6);
+            assert_eq!(valores.as_array().unwrap().len(), 8);
             assert_eq!(valores[0], payload.texto);
             assert_eq!(valores[1], payload.tipo);
             assert_eq!(valores[2], payload.link.unwrap());
             assert_eq!(valores[3], payload.link_rotulo.unwrap());
             assert_eq!(valores[4], pode_responder);
             assert_eq!(valores[5], tocar_som);
+            assert_eq!(valores[6], serde_json::Value::Null);
+            assert_eq!(valores[7], serde_json::Value::Null);
         }
     }
 
@@ -1139,6 +1454,38 @@ mod tests {
         let payload: NotificacaoPayload = serde_json::from_str(legado).unwrap();
         assert!(!payload.pode_responder);
         assert!(!payload.tocar_som);
+        assert_eq!(payload.acao, None);
+        assert_eq!(payload.acao_rotulo, None);
+    }
+
+    #[test]
+    fn test_otimizar_memoria_sistema() {
+        let (antes, depois) = otimizar_memoria_sistema();
+        assert!(antes > 0);
+        assert!(depois > 0);
+    }
+
+    #[test]
+    fn test_notificacao_com_acao_serializacao() {
+        let payload = NotificacaoPayload {
+            texto: "O uso de memória RAM está em 85%. Deseja otimizar o sistema agora?".to_string(),
+            tipo: "normal".to_string(),
+            link: None,
+            link_rotulo: None,
+            pode_responder: false,
+            tocar_som: false,
+            acao: Some("limpar_cache_ram".to_string()),
+            acao_rotulo: Some("Otimizar RAM".to_string()),
+        };
+
+        let json = serde_json::to_string(&payload).unwrap();
+        let lida: NotificacaoPayload = serde_json::from_str(&json).unwrap();
+        assert_eq!(lida.acao, Some("limpar_cache_ram".to_string()));
+        assert_eq!(lida.acao_rotulo, Some("Otimizar RAM".to_string()));
+
+        let script = payload.script_atualizacao();
+        assert!(script.contains("limpar_cache_ram"));
+        assert!(script.contains("Otimizar RAM"));
     }
 
     #[test]
@@ -1584,7 +1931,7 @@ mod tests {
         let _ = fs::create_dir_all(&tmp_dir);
         let cfg_file = tmp_dir.join("config.json");
 
-        // 1. Serialização com personalidade e limite_caracteres explícitos
+        // 1. Serialização com personalidade, limite_caracteres e idioma explícitos
         let config = AppConfig {
             user_name: "Alan".to_string(),
             gemini_api_key: "AIzaSyTest123".to_string(),
@@ -1593,6 +1940,7 @@ mod tests {
             alerta_manutencao: true,
             alerta_interacao_bem_estar: false,
             frequencia_alertas: "frequente".to_string(),
+            idioma: "en".to_string(),
         };
 
         let json = serde_json::to_string_pretty(&config).unwrap();
@@ -1606,8 +1954,9 @@ mod tests {
         assert!(lida.alerta_manutencao);
         assert!(!lida.alerta_interacao_bem_estar);
         assert_eq!(lida.frequencia_alertas, "frequente");
+        assert_eq!(lida.idioma, "en");
 
-        // 2. Desserialização de JSON legado sem os campos personalidade, limite e alertas (deve usar defaults)
+        // 2. Desserialização de JSON legado sem os campos personalidade, limite, alertas e idioma (deve usar defaults)
         let json_legado = r#"{"user_name": "Climaco", "gemini_api_key": "AIzaSyLegacyKey"}"#;
         let lida_legada: AppConfig = serde_json::from_str(json_legado).unwrap();
         assert_eq!(lida_legada.user_name, "Climaco");
@@ -1617,6 +1966,7 @@ mod tests {
         assert!(lida_legada.alerta_manutencao);
         assert!(lida_legada.alerta_interacao_bem_estar);
         assert_eq!(lida_legada.frequencia_alertas, "equilibrado");
+        assert_eq!(lida_legada.idioma, "pt");
 
         // 3. Compatibilidade: se personalidade for "sarcastico", deve ser tratada como "hostil"
         let json_sarcastico = r#"{"user_name": "Alan", "gemini_api_key": "key123", "personalidade": "sarcastico", "limite_caracteres": 140}"#;
@@ -1639,50 +1989,103 @@ mod tests {
 
     #[test]
     fn test_obter_instrucao_personalidade() {
-        let regra_nome = "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.";
+        let regra_nome_pt = "USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.";
 
-        // 1. Espelho
-        let inst_espelho = obter_instrucao_personalidade("espelho");
-        assert!(inst_espelho.contains(regra_nome));
-        assert!(inst_espelho.contains("Educado, Engraçado e Sério/Direto"));
-        assert!(inst_espelho.contains("PROIBIDO acionar o comportamento Hostil/ácido pesado"));
+        // --- TESTES EM PORTUGUÊS (PT) ---
+        // 1. Espelho PT
+        let inst_espelho_pt = obter_instrucao_personalidade("espelho", "pt");
+        assert!(inst_espelho_pt.contains(regra_nome_pt));
+        assert!(inst_espelho_pt.contains("Educado, Engraçado e Sério/Direto"));
+        assert!(inst_espelho_pt.contains("PROIBIDO acionar o comportamento Hostil/ácido pesado"));
 
-        // 2. Hostil
-        let inst_hostil = obter_instrucao_personalidade("hostil");
-        assert!(inst_hostil.contains(regra_nome));
-        assert!(inst_hostil.contains("O Mii é abertamente agressivo, boca-suja, sem paciência e estressado."));
-        assert!(inst_hostil.contains("PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA"));
-        assert!(inst_hostil.contains("LINGUAGEM HUMANA DE INTERNET"));
-        assert!(inst_hostil.contains("COMPRAR A BRISA E PEGADINHAS"));
-        assert!(inst_hostil.contains("PERGUNTAS IDIOTAS / CÓDIGO BÁSICO"));
-        assert!(inst_hostil.contains("PEDIDOS DIRETO DE XINGAMENTO"));
+        // 2. Hostil PT
+        let inst_hostil_pt = obter_instrucao_personalidade("hostil", "pt");
+        assert!(inst_hostil_pt.contains(regra_nome_pt));
+        assert!(inst_hostil_pt.contains("O Mii é abertamente agressivo, boca-suja, sem paciência e estressado."));
+        assert!(inst_hostil_pt.contains("PROIBIÇÃO DE BORDÕES ROBÓTICOS DE IA"));
+        assert!(inst_hostil_pt.contains("LINGUAGEM HUMANA DE INTERNET"));
+        assert!(inst_hostil_pt.contains("COMPRAR A BRISA E PEGADINHAS"));
+        assert!(inst_hostil_pt.contains("PERGUNTAS IDIOTAS / CÓDIGO BÁSICO"));
+        assert!(inst_hostil_pt.contains("PEDIDOS DIRETO DE XINGAMENTO"));
 
-        // 3. Compatibilidade: "sarcastico" mapeia para o modo hostil
-        let inst_sarcastico = obter_instrucao_personalidade("sarcastico");
-        assert_eq!(inst_sarcastico, inst_hostil);
+        // 3. Compatibilidade PT: "sarcastico" mapeia para o modo hostil
+        let inst_sarcastico_pt = obter_instrucao_personalidade("sarcastico", "pt");
+        assert_eq!(inst_sarcastico_pt, inst_hostil_pt);
 
-        // 4. Educado
-        let inst_educado = obter_instrucao_personalidade("educado");
-        assert!(inst_educado.contains(regra_nome));
-        assert!(inst_educado.contains("extremamente educado"));
+        // 4. Educado PT
+        let inst_educado_pt = obter_instrucao_personalidade("educado", "pt");
+        assert!(inst_educado_pt.contains(regra_nome_pt));
+        assert!(inst_educado_pt.contains("extremamente educado"));
 
-        // 5. Engraçado
-        let inst_engracado = obter_instrucao_personalidade("engracado");
-        assert!(inst_engracado.contains(regra_nome));
-        assert!(inst_engracado.contains("engraçado"));
+        // 5. Engraçado PT
+        let inst_engracado_pt = obter_instrucao_personalidade("engracado", "pt");
+        assert!(inst_engracado_pt.contains(regra_nome_pt));
+        assert!(inst_engracado_pt.contains("engraçado"));
 
-        // 6. Sério & Direto
-        let inst_direto = obter_instrucao_personalidade("direto");
-        assert!(inst_direto.contains(regra_nome));
-        assert!(inst_direto.contains("100% sério"));
+        // 6. Sério & Direto PT
+        let inst_direto_pt = obter_instrucao_personalidade("direto", "pt");
+        assert!(inst_direto_pt.contains(regra_nome_pt));
+        assert!(inst_direto_pt.contains("100% sério"));
 
-        // 7. Manuel Gomes (removido, cai no fallback suave para espelho)
-        let inst_mg = obter_instrucao_personalidade("manuel_gomes");
-        assert_eq!(inst_mg, inst_espelho);
+        // 7. Manuel Gomes PT (cai no fallback suave para espelho)
+        let inst_mg_pt = obter_instrucao_personalidade("manuel_gomes", "pt");
+        assert_eq!(inst_mg_pt, inst_espelho_pt);
 
-        // 8. Fallback para valor desconhecido (deve cair em espelho)
-        let inst_desconhecido = obter_instrucao_personalidade("desconhecido");
-        assert_eq!(inst_desconhecido, inst_espelho);
+        // 8. Fallback PT para valor desconhecido
+        let inst_desconhecido_pt = obter_instrucao_personalidade("desconhecido", "pt");
+        assert_eq!(inst_desconhecido_pt, inst_espelho_pt);
+
+        // --- TESTES EM INGLÊS (EN) ---
+        let regra_nome_en = "MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.";
+
+        // 9. Hostil EN
+        let inst_hostil_en = obter_instrucao_personalidade("hostil", "en");
+        assert!(inst_hostil_en.contains(regra_nome_en));
+        assert!(inst_hostil_en.contains("The Mii is openly aggressive, foul-mouthed, impatient, and stressed out."));
+        assert!(inst_hostil_en.contains("NO ROBOTIC AI CLICHÉS"));
+        assert!(inst_hostil_en.contains("NATURAL INTERNET PROFANITY"));
+        assert!(inst_hostil_en.contains("dumbass"));
+        assert!(inst_hostil_en.contains("asshole"));
+        assert!(inst_hostil_en.contains("dipshit"));
+        assert!(inst_hostil_en.contains("LEAN INTO PRANKS AND TROLLS"));
+        assert!(inst_hostil_en.contains("deez nuts"));
+        assert!(inst_hostil_en.contains("ligma"));
+        assert!(inst_hostil_en.contains("updog"));
+        assert!(inst_hostil_en.contains("STUPID QUESTIONS / BASIC CODE"));
+        assert!(inst_hostil_en.contains("API tokens"));
+        assert!(inst_hostil_en.contains("DIRECT INSULT REQUESTS"));
+
+        // 10. Compatibilidade EN: "sarcastico"
+        let inst_sarcastico_en = obter_instrucao_personalidade("sarcastico", "en");
+        assert_eq!(inst_sarcastico_en, inst_hostil_en);
+
+        // 11. Educado EN
+        let inst_educado_en = obter_instrucao_personalidade("educado", "en");
+        assert!(inst_educado_en.contains(regra_nome_en));
+        assert!(inst_educado_en.contains("butler"));
+        assert!(inst_educado_en.contains("polite"));
+
+        // 12. Engraçado EN
+        let inst_engracado_en = obter_instrucao_personalidade("engracado", "en");
+        assert!(inst_engracado_en.contains(regra_nome_en));
+        assert!(inst_engracado_en.contains("funny"));
+        assert!(inst_engracado_en.contains("puns"));
+
+        // 13. Sério & Direto EN
+        let inst_direto_en = obter_instrucao_personalidade("direto", "en");
+        assert!(inst_direto_en.contains(regra_nome_en));
+        assert!(inst_direto_en.contains("100% serious"));
+        assert!(inst_direto_en.contains("straight to the point"));
+
+        // 14. Espelho EN
+        let inst_espelho_en = obter_instrucao_personalidade("espelho", "en");
+        assert!(inst_espelho_en.contains(regra_nome_en));
+        assert!(inst_espelho_en.contains("Mirror the user's tone"));
+        assert!(inst_espelho_en.contains("FORBIDDEN from triggering Hostile"));
+
+        // 15. Fallback EN para valor desconhecido
+        let inst_desconhecido_en = obter_instrucao_personalidade("desconhecido", "en");
+        assert_eq!(inst_desconhecido_en, inst_espelho_en);
     }
 
     #[test]

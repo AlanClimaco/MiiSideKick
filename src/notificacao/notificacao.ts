@@ -73,6 +73,8 @@ interface PayloadNotificacao {
     link_rotulo?: string | null;
     pode_responder?: boolean;
     tocar_som?: boolean;
+    acao?: string | null;
+    acao_rotulo?: string | null;
 }
 
 (window as any).atualizarInterface = function(
@@ -81,7 +83,9 @@ interface PayloadNotificacao {
     link?: string | null,
     linkRotulo?: string | null,
     podeResponder?: boolean,
-    tocarSom?: boolean
+    tocarSom?: boolean,
+    acao?: string | null,
+    acaoRotulo?: string | null
 ) {
     let texto: string;
     let tipoFinal = "normal";
@@ -89,6 +93,8 @@ interface PayloadNotificacao {
     let linkRotuloFinal: string | null | undefined = null;
     let podeResponderFinal = false;
     let deveTocarSom = false;
+    let acaoFinal: string | null | undefined = null;
+    let acaoRotuloFinal: string | null | undefined = null;
 
     if (typeof textoOuPayload === "object" && textoOuPayload !== null) {
         texto = textoOuPayload.texto;
@@ -97,6 +103,8 @@ interface PayloadNotificacao {
         linkRotuloFinal = textoOuPayload.link_rotulo;
         podeResponderFinal = textoOuPayload.pode_responder === true;
         deveTocarSom = textoOuPayload.tocar_som === true;
+        acaoFinal = textoOuPayload.acao;
+        acaoRotuloFinal = textoOuPayload.acao_rotulo;
     } else {
         texto = textoOuPayload;
         tipoFinal = tipo || "normal";
@@ -104,6 +112,8 @@ interface PayloadNotificacao {
         linkRotuloFinal = linkRotulo;
         podeResponderFinal = podeResponder === true;
         deveTocarSom = tocarSom === true;
+        acaoFinal = acao;
+        acaoRotuloFinal = acaoRotulo;
     }
 
     pausarTimerFechamento();
@@ -114,6 +124,38 @@ interface PayloadNotificacao {
 
     if (btnResponder) {
         btnResponder.style.display = podeResponderFinal ? "inline-flex" : "none";
+        invoke("carregar_configuracoes")
+            .then((cfg: any) => {
+                if (btnResponder) {
+                    btnResponder.innerText = (cfg && cfg.idioma === "en") ? "Reply" : "Responder";
+                }
+            })
+            .catch(() => {});
+    }
+
+    const btnAcao = document.getElementById("btnAcao") as HTMLButtonElement | null;
+    if (btnAcao) {
+        if (acaoFinal && acaoFinal.trim().length > 0) {
+            btnAcao.innerText = acaoRotuloFinal || (acaoFinal === "limpar_cache_ram" ? "Otimizar RAM" : "Executar");
+            btnAcao.style.display = "inline-flex";
+            btnAcao.onclick = async (e) => {
+                e.stopPropagation();
+                pausarTimerFechamento();
+                btnAcao.disabled = true;
+                btnAcao.innerText = "⏳...";
+                try {
+                    await invoke(acaoFinal!);
+                } catch (err) {
+                    console.error("Erro ao executar ação:", err);
+                } finally {
+                    btnAcao.disabled = false;
+                    btnAcao.style.display = "none";
+                }
+            };
+        } else {
+            btnAcao.style.display = "none";
+            btnAcao.onclick = null;
+        }
     }
 
     document.getElementById("mensagem")!.innerText = texto;
@@ -135,7 +177,7 @@ interface PayloadNotificacao {
 
     if (linkFinal && linkFinal.trim().startsWith("http")) {
         if (refContainer && btnLink && labelLink) {
-            labelLink.innerText = linkRotuloFinal || "Acessar Fonte";
+            labelLink.innerText = linkRotuloFinal || "Documentação";
             btnLink.onclick = (e) => {
                 e.stopPropagation();
                 openUrl(linkFinal!).catch(() => window.open(linkFinal!, "_blank"));
@@ -148,7 +190,7 @@ interface PayloadNotificacao {
 
     document.body.classList.remove("fade-out");
 
-    iniciarTimerFechamento(4000);
+    iniciarTimerFechamento(acaoFinal ? 8000 : 4000);
 };
 
 // Pausar desaparecimento quando o mouse estiver sobre a notificação

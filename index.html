@@ -11,22 +11,35 @@
     <div class="aero-window setup-card">
       <div class="window-header">
         <img src="/src/assets/mii.png" alt="Avatar do MiiSideKick" class="mii-icon" id="headerAvatar" width="76" height="76">
-        <h2>Configurações</h2>
-        <p class="subtitle">Personalize seu assistente local.</p>
+        <h2 id="headerTitle">Configurações</h2>
+        <p class="subtitle" id="headerSubtitle">Personalize seu assistente local.</p>
       </div>
+
+      <!-- Seção Idioma / Language -->
+      <section class="setup-section language-section">
+        <div class="section-title" id="sectionLanguageTitle">Idioma / Language</div>
+        <div class="language-presets" id="languageContainer">
+          <button type="button" class="lang-btn active" data-lang="pt">
+            Português 🇧🇷
+          </button>
+          <button type="button" class="lang-btn" data-lang="en">
+            English 🇺🇸
+          </button>
+        </div>
+      </section>
 
       <!-- Seção Perfil -->
       <section class="setup-section">
-        <div class="section-title">Perfil</div>
+        <div class="section-title" id="sectionProfileTitle">Perfil</div>
         <div class="input-group">
-          <label for="userName">Como devo te chamar?</label>
+          <label for="userName" id="labelUserName">Como devo te chamar?</label>
           <input type="text" id="userName" placeholder="Lendo do sistema...">
         </div>
       </section>
 
       <!-- Seção Personalidade -->
       <section class="setup-section">
-        <div class="section-title">Personalidade</div>
+        <div class="section-title" id="sectionPersonalityTitle">Personalidade</div>
         <div class="personality-grid" id="personalityContainer">
           <button type="button" class="personality-btn active" data-personality="espelho">
             Espelho
@@ -51,9 +64,9 @@
 
       <!-- Seção Chave de API do Gemini -->
       <section class="setup-section">
-        <div class="section-title">Chave de API do Gemini</div>
+        <div class="section-title" id="sectionApiKeyTitle">Chave de API do Gemini</div>
         <div class="input-group">
-          <label for="geminiApiKey">Chave de acesso</label>
+          <label for="geminiApiKey" id="labelApiKey">Chave de acesso</label>
           <div class="api-key-container">
             <input type="password" id="geminiApiKey" placeholder="Cole sua chave AIzaSy..." autocomplete="off">
             <button type="button" class="btn-toggle-key" id="btnToggleApiKey" title="Mostrar ou ocultar chave" aria-label="Mostrar ou ocultar chave">
@@ -63,7 +76,7 @@
               </svg>
             </button>
           </div>
-          <p class="input-hint">
+          <p class="input-hint" id="hintApiKey">
             Para conversar com o Mii, pegue sua chave gratuita no
             <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.
             Basta fazer login com sua conta Google e clicar em "Create API key".
@@ -73,39 +86,39 @@
 
       <!-- Seção Tamanho da Resposta -->
       <section class="setup-section">
-        <div class="section-title">Tamanho da Resposta</div>
+        <div class="section-title" id="sectionLengthTitle">Tamanho da Resposta</div>
         <div class="input-group">
-          <label>Tamanhos pré-definidos:</label>
+          <label id="labelPresetsLength">Tamanhos pré-definidos:</label>
           <div class="length-presets">
             <button type="button" class="length-btn active" data-length="70">70 (Curto)</button>
             <button type="button" class="length-btn" data-length="140">140 (Médio)</button>
             <button type="button" class="length-btn" data-length="250">250 (Longo)</button>
           </div>
-          <label for="limiteCaracteres" class="custom-limit-label">Ou defina um tamanho personalizado (30 a 500 caracteres):</label>
+          <label for="limiteCaracteres" class="custom-limit-label" id="labelCustomLength">Ou defina um tamanho personalizado (30 a 500 caracteres):</label>
           <div class="length-input-group">
             <input type="number" id="limiteCaracteres" min="30" max="500" step="10" value="70" placeholder="Ex: 180" class="length-input">
-            <span class="length-unit">caracteres</span>
+            <span class="length-unit" id="unitCharacters">caracteres</span>
           </div>
-          <p class="input-hint">Limite máximo de caracteres que o Mii usará nas respostas.</p>
+          <p class="input-hint" id="hintLength">Limite máximo de caracteres que o Mii usará nas respostas.</p>
         </div>
       </section>
 
       <!-- Seção Alertas Proativos -->
       <section class="setup-section">
-        <div class="section-title">Alertas Proativos</div>
+        <div class="section-title" id="sectionProactiveTitle">Alertas Proativos</div>
         <div class="proactive-controls">
           <label class="checkbox-label" for="checkAlertaManutencao">
             <input type="checkbox" id="checkAlertaManutencao" class="checkbox-input" checked>
-            <span><strong>Manutenção do Sistema</strong> (Lixeira cheia e acúmulo na pasta Downloads)</span>
+            <span id="spanMaintenance"><strong>Manutenção do Sistema</strong> (Lixeira cheia e acúmulo na pasta Downloads)</span>
           </label>
           <label class="checkbox-label" for="checkAlertaInteracaoBemEstar">
             <input type="checkbox" id="checkAlertaInteracaoBemEstar" class="checkbox-input" checked>
-            <span><strong>Interação & Bem-Estar</strong> (Lembretes de saúde/água/postura e curiosidades de IA)</span>
+            <span id="spanWellBeing"><strong>Interação & Bem-Estar</strong> (Lembretes de saúde/água/postura e curiosidades de IA)</span>
           </label>
         </div>
 
         <div class="frequency-container">
-          <label class="frequency-title-label">Frequência dos alertas:</label>
+          <label class="frequency-title-label" id="labelFrequency">Frequência dos alertas:</label>
           <div class="frequency-presets">
             <button type="button" class="frequency-btn" data-frequency="discreto">Discreto</button>
             <button type="button" class="frequency-btn active" data-frequency="equilibrado">Equilibrado</button>
@@ -117,34 +130,34 @@
 
       <!-- Seção Inicialização do Sistema -->
       <section class="setup-section">
-        <div class="section-title">Inicialização do Sistema</div>
+        <div class="section-title" id="sectionStartupTitle">Inicialização do Sistema</div>
         <label class="checkbox-label" for="checkAutostart">
           <input type="checkbox" id="checkAutostart" class="checkbox-input">
-          <span>Iniciar junto com o Windows</span>
+          <span id="spanAutostart">Iniciar junto com o Windows</span>
         </label>
       </section>
 
       <!-- Seção Tutorial -->
       <div class="tutorial-box">
-        <label class="tutorial-label">Onde me encontrar depois de salvar?</label>
+        <label class="tutorial-label" id="tutorialLabel">Onde me encontrar depois de salvar?</label>
         <div class="tutorial-images-container">
-          <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1: encontre o Mii na bandeja do sistema" class="tutorial-img">
+          <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1: encontre o Mii na bandeja do sistema" class="tutorial-img" id="tutorialImg1">
           <span class="tutorial-arrow" aria-hidden="true">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="6 9 12 15 18 9"></polyline>
             </svg>
           </span>
-          <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2: abra o menu de comandos do Mii" class="tutorial-img">
+          <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2: abra o menu de comandos do Mii" class="tutorial-img" id="tutorialImg2">
         </div>
-        <p class="tutorial-desc">
+        <p class="tutorial-desc" id="tutorialDesc">
           O aplicativo ficará ativo na bandeja do sistema.<br>Clique com o botão direito no ícone da bandeja para acessar os comandos.
         </p>
       </div>
 
       <button type="button" class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
 
-      <footer class="setup-footer">
-        Desenvolvido por <a href="XXX" target="_blank" class="footer-link">Alan Clímaco</a>
+      <footer class="setup-footer" id="footerText">
+        Desenvolvido por <a href="https://alanclimaco.github.io/Portfolio/" target="_blank" class="footer-link">Alan Clímaco</a>
       </footer>
     </div>
 
