@@ -24,7 +24,7 @@ O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvi
 *  **Limite Calibrável de Caracteres**: Escolha entre presets rápidos (Curto: 70, Médio: 140, Longo: 250) ou personalize livremente o teto máximo entre 30 e 500 caracteres.
 
 ### Janela Dedicada para o Histórico de Mensagens da IA
-*  **Acesso Rápido na Bandeja**: Acione a opção *"💡 Últimas Mensagens da IA"* para abrir uma janela flutuante dedicada (`historico.html`) com visual translúcido Frutiger Aero.
+*  **Acesso Rápido na Bandeja**: Acione a opção *"Últimas Mensagens da IA"* para abrir uma janela flutuante dedicada (`historico.html`) com visual translúcido Frutiger Aero.
 *  **Fila Circular em Memória**: Mantém até 5 mensagens e curiosidades recentes geradas pela IA, ignorando alertas utilitários estáticos do sistema.
 *  **Cards com Ações Imediatas**: Cada card exibe o horário de geração, mini avatar com a reação exata do Mii, link clicável (quando presente), botão para copiar o texto com um clique e botão *"Ler no Balão"* para reexibir a notificação no balão do Mii sem fechar a listagem.
 
