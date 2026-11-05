@@ -1,8 +1,9 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { AppConfig } from "../types";
 
 async function aplicarIdioma() {
     try {
-        const config: any = await invoke("carregar_configuracoes");
+        const config = await invoke<AppConfig>("carregar_configuracoes");
         const isEn = config && config.idioma === "en";
         const titleEl = document.querySelector(".timer-title");
         if (titleEl) {
@@ -33,7 +34,7 @@ async function aplicarIdioma() {
 
 document.getElementById("btnIniciar")?.addEventListener("click", async () => {
     const minutosStr = (document.getElementById("minutos") as HTMLInputElement).value;
-    const config: any = await invoke("carregar_configuracoes").catch(() => null);
+    const config = await invoke<AppConfig>("carregar_configuracoes").catch(() => null);
     const isEn = config && config.idioma === "en";
     const msgPadrao = isEn ? "Time is up!" : "O tempo acabou!";
     const mensagem = (document.getElementById("mensagem") as HTMLInputElement).value || msgPadrao;

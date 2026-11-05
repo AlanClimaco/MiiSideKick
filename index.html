@@ -3,161 +3,264 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Configurações do MiiSideKick</title>
+    <title>MiiSideKick — Configurações (v1.6.0)</title>
     <link rel="stylesheet" href="/src/css/global.css" />
     <link rel="stylesheet" href="/src/css/setup.css" />
   </head>
   <body class="setup-body">
     <div class="aero-window setup-card">
-      <div class="window-header">
-        <img src="/src/assets/mii.png" alt="Avatar do MiiSideKick" class="mii-icon" id="headerAvatar" width="76" height="76">
-        <h2 id="headerTitle">Configurações</h2>
-        <p class="subtitle" id="headerSubtitle">Personalize seu assistente local.</p>
-      </div>
-
-      <!-- Seção Idioma / Language -->
-      <section class="setup-section language-section">
-        <div class="section-title" id="sectionLanguageTitle">Idioma / Language</div>
-        <div class="language-presets" id="languageContainer">
-          <button type="button" class="lang-btn active" data-lang="pt">
-            Português 🇧🇷
-          </button>
-          <button type="button" class="lang-btn" data-lang="en">
-            English 🇺🇸
-          </button>
+      <header class="window-header">
+        <img src="/src/assets/mii.png" alt="Avatar do MiiSideKick" class="mii-icon" id="headerAvatar" width="46" height="46">
+        <div class="header-titles">
+          <h2 id="headerTitle">Configurações</h2>
+          <p class="subtitle" id="headerSubtitle">Personalize seu assistente local.</p>
         </div>
-      </section>
+      </header>
 
-      <!-- Seção Perfil -->
-      <section class="setup-section">
-        <div class="section-title" id="sectionProfileTitle">Perfil</div>
-        <div class="input-group">
-          <label for="userName" id="labelUserName">Como devo te chamar?</label>
-          <input type="text" id="userName" placeholder="Lendo do sistema...">
-        </div>
-      </section>
+      <!-- Navegação por Abas Horizontais (Windows 7 Aero Property Sheet) -->
+      <nav class="setup-tabs" role="tablist" aria-label="Abas de Configuração">
+        <button type="button" class="tab-btn active" data-tab="tab-geral" role="tab" id="tabBtnGeral" aria-selected="true" aria-controls="tab-geral">
+          Geral & Perfil
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-ia" role="tab" id="tabBtnIA" aria-selected="false" aria-controls="tab-ia">
+          Personalidade & IA
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-sistema" role="tab" id="tabBtnSistema" aria-selected="false" aria-controls="tab-sistema">
+          Alertas & Sistema
+        </button>
+        <button type="button" class="tab-btn" data-tab="tab-ferramentas" role="tab" id="tabBtnFerramentas" aria-selected="false" aria-controls="tab-ferramentas">
+          Ferramentas & Feedback
+        </button>
+      </nav>
 
-      <!-- Seção Personalidade -->
-      <section class="setup-section">
-        <div class="section-title" id="sectionPersonalityTitle">Personalidade</div>
-        <div class="personality-grid" id="personalityContainer">
-          <button type="button" class="personality-btn active" data-personality="espelho">
-            Espelho
-          </button>
-          <button type="button" class="personality-btn" data-personality="educado">
-            Educado
-          </button>
-          <button type="button" class="personality-btn" data-personality="engracado">
-            Engraçado
-          </button>
-          <button type="button" class="personality-btn" data-personality="direto">
-            Sério & Direto
-          </button>
-          <button type="button" class="personality-btn" data-personality="hostil">
-            Hostil
-          </button>
-        </div>
-        <p class="personality-hint" id="personalityHint">
-          Adapta o tom ao usuário alternando estritamente entre Educado, Engraçado e Sério/Direto.
-        </p>
-      </section>
+      <!-- Área de Visualização das Abas -->
+      <main class="setup-tab-viewport">
+        <!-- ABA 1: Geral & Perfil -->
+        <div class="tab-pane active" id="tab-geral" role="tabpanel" aria-labelledby="tabBtnGeral">
+          <!-- Idioma / Language -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionLanguageTitle">Idioma / Language</div>
+            <div class="language-presets" id="languageContainer">
+              <button type="button" class="lang-btn active" data-lang="pt">
+                Português 🇧🇷
+              </button>
+              <button type="button" class="lang-btn" data-lang="en">
+                English 🇺🇸
+              </button>
+            </div>
+          </section>
 
-      <!-- Seção Chave de API do Gemini -->
-      <section class="setup-section">
-        <div class="section-title" id="sectionApiKeyTitle">Chave de API do Gemini</div>
-        <div class="input-group">
-          <label for="geminiApiKey" id="labelApiKey">Chave de acesso</label>
-          <div class="api-key-container">
-            <input type="password" id="geminiApiKey" placeholder="Cole sua chave AIzaSy..." autocomplete="off">
-            <button type="button" class="btn-toggle-key" id="btnToggleApiKey" title="Mostrar ou ocultar chave" aria-label="Mostrar ou ocultar chave">
-              <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                <circle cx="12" cy="12" r="3"></circle>
-              </svg>
-            </button>
+          <!-- Perfil / Gostos -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionProfileTitle">Perfil</div>
+            <div class="input-group">
+              <label for="userName" id="labelUserName">Como devo te chamar?</label>
+              <input type="text" id="userName" placeholder="Lendo do sistema...">
+            </div>
+            <div class="input-group" style="margin-top: 10px;">
+              <label for="userInterests" id="labelUserInterests">Seus interesses e gostos (opcional)</label>
+              <input type="text" id="userInterests" placeholder="Ex: anime, xadrez, café, programação...">
+              <small class="input-hint" id="hintUserInterests" style="display: block; margin-top: 4px; font-size: 0.78rem; opacity: 0.85;">O Mii pode usar seus gostos de vez em quando para fazer analogias ou puxar assunto de forma sutil.</small>
+            </div>
+          </section>
+
+          <!-- Seção Tutorial da Bandeja -->
+          <div class="tutorial-box">
+            <label class="tutorial-label" id="tutorialLabel">Onde me encontrar depois de salvar?</label>
+            <div class="tutorial-images-container">
+              <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1: encontre o Mii na bandeja do sistema" class="tutorial-img" id="tutorialImg1">
+              <span class="tutorial-arrow" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </span>
+              <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2: abra o menu de comandos do Mii" class="tutorial-img" id="tutorialImg2">
+            </div>
+            <p class="tutorial-desc" id="tutorialDesc">
+              O aplicativo ficará ativo na bandeja do sistema.<br>Clique com o botão direito no ícone da bandeja para acessar os comandos.
+            </p>
           </div>
-          <p class="input-hint" id="hintApiKey">
-            Para conversar com o Mii, pegue sua chave gratuita no
-            <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.
-            Basta fazer login com sua conta Google e clicar em "Create API key".
-          </p>
         </div>
-      </section>
 
-      <!-- Seção Tamanho da Resposta -->
-      <section class="setup-section">
-        <div class="section-title" id="sectionLengthTitle">Tamanho da Resposta</div>
-        <div class="input-group">
-          <label id="labelPresetsLength">Tamanhos pré-definidos:</label>
-          <div class="length-presets">
-            <button type="button" class="length-btn active" data-length="70">70 (Curto)</button>
-            <button type="button" class="length-btn" data-length="140">140 (Médio)</button>
-            <button type="button" class="length-btn" data-length="250">250 (Longo)</button>
+        <!-- ABA 2: Personalidade & IA -->
+        <div class="tab-pane" id="tab-ia" role="tabpanel" aria-labelledby="tabBtnIA">
+          <!-- Chave de API do Gemini -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionApiKeyTitle">Chave de API do Gemini</div>
+            <div class="input-group">
+              <label for="geminiApiKey" id="labelApiKey">Chave de acesso</label>
+              <div class="api-key-container">
+                <input type="password" id="geminiApiKey" placeholder="Cole sua chave AIzaSy..." autocomplete="off">
+                <button type="button" class="btn-toggle-key" id="btnToggleApiKey" title="Mostrar ou ocultar chave" aria-label="Mostrar ou ocultar chave">
+                  <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5z"></path>
+                    <circle cx="12" cy="12" r="3"></circle>
+                  </svg>
+                </button>
+              </div>
+              <p class="input-hint" id="hintApiKey">
+                Para conversar com o Mii, pegue sua chave gratuita no
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.
+                Basta fazer login com sua conta Google e clicar em "Create API key".
+              </p>
+            </div>
+          </section>
+
+          <!-- Personalidade -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionPersonalityTitle">Personalidade</div>
+            <div class="personality-grid" id="personalityContainer">
+              <button type="button" class="personality-btn active" data-personality="espelho">
+                Espelho
+              </button>
+              <button type="button" class="personality-btn" data-personality="educado">
+                Educado
+              </button>
+              <button type="button" class="personality-btn" data-personality="engracado">
+                Engraçado
+              </button>
+              <button type="button" class="personality-btn" data-personality="direto">
+                Sério & Direto
+              </button>
+              <button type="button" class="personality-btn" data-personality="hostil">
+                Hostil
+              </button>
+            </div>
+            <p class="personality-hint" id="personalityHint">
+              Adapta o tom ao usuário alternando estritamente entre Educado, Engraçado e Sério/Direto.
+            </p>
+          </section>
+
+          <!-- Tamanho da Resposta -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionLengthTitle">Tamanho da Resposta</div>
+            <div class="input-group">
+              <label id="labelPresetsLength">Tamanhos pré-definidos:</label>
+              <div class="length-presets">
+                <button type="button" class="length-btn active" data-length="70">70 (Curto)</button>
+                <button type="button" class="length-btn" data-length="140">140 (Médio)</button>
+                <button type="button" class="length-btn" data-length="250">250 (Longo)</button>
+              </div>
+              <label for="limiteCaracteres" class="custom-limit-label" id="labelCustomLength">Ou defina um tamanho personalizado (30 a 500 caracteres):</label>
+              <div class="length-input-group">
+                <input type="number" id="limiteCaracteres" min="30" max="500" step="10" value="70" placeholder="Ex: 180" class="length-input">
+                <span class="length-unit" id="unitCharacters">caracteres</span>
+              </div>
+              <p class="input-hint" id="hintLength">Limite máximo de caracteres que o Mii usará nas respostas.</p>
+            </div>
+          </section>
+        </div>
+
+        <!-- ABA 3: Alertas & Sistema -->
+        <div class="tab-pane" id="tab-sistema" role="tabpanel" aria-labelledby="tabBtnSistema">
+          <!-- Alertas Proativos -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionProactiveTitle">Alertas Proativos</div>
+            <div class="proactive-controls">
+              <label class="checkbox-label" for="checkAlertaManutencao">
+                <input type="checkbox" id="checkAlertaManutencao" class="checkbox-input" checked>
+                <span id="spanMaintenance"><strong>Manutenção do Sistema</strong> (Lixeira cheia e acúmulo na pasta Downloads)</span>
+              </label>
+              <label class="checkbox-label" for="checkAlertaInteracaoBemEstar">
+                <input type="checkbox" id="checkAlertaInteracaoBemEstar" class="checkbox-input" checked>
+                <span id="spanWellBeing"><strong>Interação & Bem-Estar</strong> (Lembretes de saúde/água/postura e curiosidades de IA)</span>
+              </label>
+            </div>
+
+            <div class="frequency-container">
+              <label class="frequency-title-label" id="labelFrequency">Frequência dos alertas:</label>
+              <div class="frequency-presets">
+                <button type="button" class="frequency-btn" data-frequency="discreto">Discreto</button>
+                <button type="button" class="frequency-btn active" data-frequency="equilibrado">Equilibrado</button>
+                <button type="button" class="frequency-btn" data-frequency="frequente">Frequente</button>
+              </div>
+              <p class="input-hint" id="frequencyHint">Intervalos balanceados e lembretes amigáveis ao longo do dia.</p>
+            </div>
+          </section>
+
+          <!-- Inicialização do Sistema -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionStartupTitle">Inicialização do Sistema</div>
+            <label class="checkbox-label" for="checkAutostart">
+              <input type="checkbox" id="checkAutostart" class="checkbox-input">
+              <span id="spanAutostart">Iniciar junto com o Windows</span>
+            </label>
+          </section>
+        </div>
+
+        <!-- ABA 4: Ferramentas -->
+        <div class="tab-pane" id="tab-ferramentas" role="tabpanel" aria-labelledby="tabBtnFerramentas">
+          <!-- Atalhos Globais -->
+          <section class="setup-section shortcuts-section">
+            <div class="section-title" id="sectionShortcutsTitle">Atalhos do Teclado</div>
+            <div class="shortcut-card">
+              <div class="shortcut-info">
+                <span class="shortcut-label" id="shortcutChatLabel">Conversa Rápida com o Mii</span>
+                <span class="shortcut-desc" id="shortcutChatDesc">Abre a caixa de diálogo instantânea a partir de qualquer aplicativo.</span>
+              </div>
+              <div class="shortcut-keys" id="shortcutKeys">
+                <kbd class="key-badge" id="keyModifier">Ctrl</kbd>
+                <span class="key-plus">+</span>
+                <kbd class="key-badge">Shift</kbd>
+                <span class="key-plus">+</span>
+                <kbd class="key-badge">M</kbd>
+              </div>
+            </div>
+          </section>
+
+          <!-- Formulário de Feedback -->
+          <section class="setup-section feedback-section">
+            <div class="section-title" id="sectionFeedbackTitle">Enviar Feedback</div>
+            <p class="input-hint" id="hintFeedback" style="margin-top: 4px; margin-bottom: 10px;">
+              Tem uma sugestão, encontrou um problema ou quer elogiar o projeto? Deixe sua mensagem!
+            </p>
+            <form id="feedbackForm" class="feedback-form">
+              <div class="input-group">
+                <label for="feedbackName" id="labelFeedbackName">Seu Nome / Apelido (opcional)</label>
+                <input type="text" id="feedbackName" placeholder="Ex: Alex" autocomplete="name">
+              </div>
+              <div class="input-group" style="margin-top: 10px;">
+                <label for="feedbackType" id="labelFeedbackType">Tipo de Feedback</label>
+                <select id="feedbackType" class="setup-select">
+                  <option value="sugestao" id="optSuggestion">Sugestão</option>
+                  <option value="bug" id="optBug">Problema / Bug</option>
+                  <option value="elogio" id="optPraise">Elogio</option>
+                </select>
+              </div>
+              <div class="input-group" style="margin-top: 10px;">
+                <label for="feedbackMessage" id="labelFeedbackMessage">Mensagem</label>
+                <textarea id="feedbackMessage" rows="3" class="setup-textarea" placeholder="Descreva sua mensagem aqui..." required></textarea>
+              </div>
+              <button type="submit" class="btn-secondary" id="btnEnviarFeedback" style="margin-top: 10px;">
+                Enviar Feedback
+              </button>
+              <div id="feedbackStatus" class="feedback-status" style="display: none;"></div>
+            </form>
+          </section>
+        </div>
+      </main>
+
+      <!-- Rodapé Fixo (Sticky Footer) -->
+      <footer class="setup-sticky-footer">
+        <button type="button" class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
+        <div class="footer-meta-row">
+          <div class="version-update-container">
+            <div class="version-row">
+              <span class="version-label">v1.6.0</span>
+              <span class="version-separator">•</span>
+              <button type="button" class="btn-check-updates" id="btnCheckUpdates">
+                <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                </svg>
+                <span id="labelCheckUpdates">Verificar Atualizações</span>
+              </button>
+            </div>
+            <div id="updateStatusMsg" class="update-status-msg" style="display: none;"></div>
           </div>
-          <label for="limiteCaracteres" class="custom-limit-label" id="labelCustomLength">Ou defina um tamanho personalizado (30 a 500 caracteres):</label>
-          <div class="length-input-group">
-            <input type="number" id="limiteCaracteres" min="30" max="500" step="10" value="70" placeholder="Ex: 180" class="length-input">
-            <span class="length-unit" id="unitCharacters">caracteres</span>
+          <div class="setup-credits" id="footerText">
+            Desenvolvido por <a href="https://alanclimaco.github.io/Portfolio/" target="_blank" class="footer-link">Alan Clímaco</a>
           </div>
-          <p class="input-hint" id="hintLength">Limite máximo de caracteres que o Mii usará nas respostas.</p>
         </div>
-      </section>
-
-      <!-- Seção Alertas Proativos -->
-      <section class="setup-section">
-        <div class="section-title" id="sectionProactiveTitle">Alertas Proativos</div>
-        <div class="proactive-controls">
-          <label class="checkbox-label" for="checkAlertaManutencao">
-            <input type="checkbox" id="checkAlertaManutencao" class="checkbox-input" checked>
-            <span id="spanMaintenance"><strong>Manutenção do Sistema</strong> (Lixeira cheia e acúmulo na pasta Downloads)</span>
-          </label>
-          <label class="checkbox-label" for="checkAlertaInteracaoBemEstar">
-            <input type="checkbox" id="checkAlertaInteracaoBemEstar" class="checkbox-input" checked>
-            <span id="spanWellBeing"><strong>Interação & Bem-Estar</strong> (Lembretes de saúde/água/postura e curiosidades de IA)</span>
-          </label>
-        </div>
-
-        <div class="frequency-container">
-          <label class="frequency-title-label" id="labelFrequency">Frequência dos alertas:</label>
-          <div class="frequency-presets">
-            <button type="button" class="frequency-btn" data-frequency="discreto">Discreto</button>
-            <button type="button" class="frequency-btn active" data-frequency="equilibrado">Equilibrado</button>
-            <button type="button" class="frequency-btn" data-frequency="frequente">Frequente</button>
-          </div>
-          <p class="input-hint" id="frequencyHint">Intervalos balanceados e lembretes amigáveis ao longo do dia.</p>
-        </div>
-      </section>
-
-      <!-- Seção Inicialização do Sistema -->
-      <section class="setup-section">
-        <div class="section-title" id="sectionStartupTitle">Inicialização do Sistema</div>
-        <label class="checkbox-label" for="checkAutostart">
-          <input type="checkbox" id="checkAutostart" class="checkbox-input">
-          <span id="spanAutostart">Iniciar junto com o Windows</span>
-        </label>
-      </section>
-
-      <!-- Seção Tutorial -->
-      <div class="tutorial-box">
-        <label class="tutorial-label" id="tutorialLabel">Onde me encontrar depois de salvar?</label>
-        <div class="tutorial-images-container">
-          <img src="/src/assets/tutoriais/tray-passo1.png" alt="Passo 1: encontre o Mii na bandeja do sistema" class="tutorial-img" id="tutorialImg1">
-          <span class="tutorial-arrow" aria-hidden="true">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="6 9 12 15 18 9"></polyline>
-            </svg>
-          </span>
-          <img src="/src/assets/tutoriais/tray-passo2.png" alt="Passo 2: abra o menu de comandos do Mii" class="tutorial-img" id="tutorialImg2">
-        </div>
-        <p class="tutorial-desc" id="tutorialDesc">
-          O aplicativo ficará ativo na bandeja do sistema.<br>Clique com o botão direito no ícone da bandeja para acessar os comandos.
-        </p>
-      </div>
-
-      <button type="button" class="btn-primary" id="btnSalvar">Salvar e Ocultar</button>
-
-      <footer class="setup-footer" id="footerText">
-        Desenvolvido por <a href="https://alanclimaco.github.io/Portfolio/" target="_blank" class="footer-link">Alan Clímaco</a>
       </footer>
     </div>
 

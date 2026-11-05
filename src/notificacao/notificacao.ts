@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { openUrl } from "@tauri-apps/plugin-opener";
+import type { AppConfig, PayloadNotificacao } from "../types";
 
 // Importação das 8 expressões visuais oficiais para garantir empacotamento pelo bundler
 import miiNormal from '../assets/reacoes/mii-normal.png';
@@ -10,7 +11,7 @@ import miiExplicando from '../assets/reacoes/mii-explicando.png';
 import miiBocejo from '../assets/reacoes/mii-bocejo.png';
 import miiLambendo from '../assets/reacoes/mii-lambendo.png';
 import miiRaiva from '../assets/reacoes/mii-raiva.png';
-import bellSound from '../assets/audio/notification.wav';
+import bellSound from '../assets/audio/notification.mp3';
 
 // Mapa das 8 reações suportadas com suporte a aliases
 const mapaAssetsReacoes: Record<string, string> = {
@@ -44,6 +45,22 @@ function obterImagemReacao(reacao: string): string {
 
 let hideTimeout: number;
 let fadeTimeout: number;
+let ultimoTempoCalculado: number = 3500;
+
+export function calcularTempoLeitura(
+    texto: string,
+    possuiAcao: boolean,
+    ehReconsulta: boolean = false
+): number {
+    if (ehReconsulta) {
+        return Math.max(16000, (texto || "").length * 80);
+    }
+    const tempoPorCaracteres = Math.max(3500, (texto || "").length * 50);
+    if (possuiAcao) {
+        return Math.max(8000, tempoPorCaracteres);
+    }
+    return tempoPorCaracteres;
+}
 
 function pausarTimerFechamento() {
     clearTimeout(hideTimeout);
@@ -62,22 +79,21 @@ function iniciarTimerFechamento(ms: number = 3500) {
 }
 
 function tocarSomNotificacao() {
-    const audio = new Audio(bellSound);
-    audio.play().catch(() => {});
+    try {
+        const audio = new Audio(bellSound);
+        audio.volume = 1.0;
+        const playPromise = audio.play();
+        if (playPromise !== undefined) {
+            playPromise.catch((err) => {
+                console.warn("[Áudio]: Autoplay impedido ou restrito:", err);
+            });
+        }
+    } catch (e) {
+        console.warn("[Áudio]: Falha ao instanciar som de notificação:", e);
+    }
 }
 
-interface PayloadNotificacao {
-    texto: string;
-    tipo: string;
-    link?: string | null;
-    link_rotulo?: string | null;
-    pode_responder?: boolean;
-    tocar_som?: boolean;
-    acao?: string | null;
-    acao_rotulo?: string | null;
-}
-
-(window as any).atualizarInterface = function(
+window.atualizarInterface = function(
     textoOuPayload: string | PayloadNotificacao,
     tipo?: string,
     link?: string | null,
@@ -85,7 +101,8 @@ interface PayloadNotificacao {
     podeResponder?: boolean,
     tocarSom?: boolean,
     acao?: string | null,
-    acaoRotulo?: string | null
+    acaoRotulo?: string | null,
+    ehReconsulta?: boolean
 ) {
     let texto: string;
     let tipoFinal = "normal";
@@ -95,6 +112,7 @@ interface PayloadNotificacao {
     let deveTocarSom = false;
     let acaoFinal: string | null | undefined = null;
     let acaoRotuloFinal: string | null | undefined = null;
+    let ehReconsultaFinal = false;
 
     if (typeof textoOuPayload === "object" && textoOuPayload !== null) {
         texto = textoOuPayload.texto;
@@ -105,6 +123,7 @@ interface PayloadNotificacao {
         deveTocarSom = textoOuPayload.tocar_som === true;
         acaoFinal = textoOuPayload.acao;
         acaoRotuloFinal = textoOuPayload.acao_rotulo;
+        ehReconsultaFinal = textoOuPayload.eh_reconsulta === true;
     } else {
         texto = textoOuPayload;
         tipoFinal = tipo || "normal";
@@ -114,6 +133,7 @@ interface PayloadNotificacao {
         deveTocarSom = tocarSom === true;
         acaoFinal = acao;
         acaoRotuloFinal = acaoRotulo;
+        ehReconsultaFinal = ehReconsulta === true;
     }
 
     pausarTimerFechamento();
@@ -124,8 +144,8 @@ interface PayloadNotificacao {
 
     if (btnResponder) {
         btnResponder.style.display = podeResponderFinal ? "inline-flex" : "none";
-        invoke("carregar_configuracoes")
-            .then((cfg: any) => {
+        invoke<AppConfig>("carregar_configuracoes")
+            .then((cfg) => {
                 if (btnResponder) {
                     btnResponder.innerText = (cfg && cfg.idioma === "en") ? "Reply" : "Responder";
                 }
@@ -134,8 +154,10 @@ interface PayloadNotificacao {
     }
 
     const btnAcao = document.getElementById("btnAcao") as HTMLButtonElement | null;
+    const temAcaoValida = Boolean(acaoFinal && acaoFinal.trim().length > 0);
+
     if (btnAcao) {
-        if (acaoFinal && acaoFinal.trim().length > 0) {
+        if (temAcaoValida) {
             btnAcao.innerText = acaoRotuloFinal || (acaoFinal === "limpar_cache_ram" ? "Otimizar RAM" : "Executar");
             btnAcao.style.display = "inline-flex";
             btnAcao.onclick = async (e) => {
@@ -190,7 +212,8 @@ interface PayloadNotificacao {
 
     document.body.classList.remove("fade-out");
 
-    iniciarTimerFechamento(acaoFinal ? 8000 : 4000);
+    ultimoTempoCalculado = calcularTempoLeitura(texto, temAcaoValida, ehReconsultaFinal);
+    iniciarTimerFechamento(ultimoTempoCalculado);
 };
 
 // Pausar desaparecimento quando o mouse estiver sobre a notificação
@@ -201,7 +224,7 @@ if (container) {
     });
 
     container.addEventListener("mouseleave", () => {
-        iniciarTimerFechamento(3500);
+        iniciarTimerFechamento(ultimoTempoCalculado);
     });
 }
 
@@ -227,9 +250,9 @@ if (btnResponder) {
 
 async function carregarNotificacao() {
     try {
-        const dados: any = await invoke("pegar_dados_notificacao");
-        if (dados && dados.texto) {
-            (window as any).atualizarInterface(dados);
+        const dados = await invoke<PayloadNotificacao | null>("pegar_dados_notificacao");
+        if (dados && dados.texto && window.atualizarInterface) {
+            window.atualizarInterface(dados);
         }
     } catch (e) {
         console.error("Erro ao carregar dados iniciais:", e);

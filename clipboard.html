@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Histórico da Área de Transferência</title>
+    <link rel="stylesheet" href="/src/css/global.css" />
+    <link rel="stylesheet" href="/src/css/clipboard.css" />
+</head>
+<body class="clipboard-body">
+    <div class="glass-card clipboard-card">
+        <div class="clipboard-header">
+            <div class="header-left">
+                <img src="/src/assets/reacoes/mii-normal.png" alt="Mii" class="clipboard-avatar">
+                <div class="header-text">
+                    <h3 class="clipboard-title" id="clipboardTitle">Área de Transferência</h3>
+                    <span class="clipboard-subtitle" id="clipboardSubtitle">Histórico recente</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-clear" id="btnLimpar" type="button" title="Limpar histórico" aria-label="Limpar histórico">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+                <button class="btn-fechar" id="btnFechar" type="button" title="Fechar" aria-label="Fechar histórico">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="clipboard-list" id="clipboardList">
+            <!-- Cards de itens copiados -->
+        </div>
+
+        <div class="clipboard-empty" id="clipboardEmpty" style="display: none;">
+            <p id="emptyMessage">Nenhum texto copiado ainda.</p>
+        </div>
+    </div>
+
+    <script type="module" src="/src/clipboard/clipboard.ts"></script>
+</body>
+</html>

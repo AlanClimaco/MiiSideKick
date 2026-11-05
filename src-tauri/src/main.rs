@@ -2,12 +2,108 @@
 
 mod comandos;
 mod gatilhos;
+mod sistema;
+mod clipboard;
 
 use tauri::{
     menu::{Menu, MenuItem},
-    tray::{MouseButton, TrayIconBuilder, TrayIconEvent},
+    tray::TrayIconBuilder,
     Manager, WebviewUrl, WebviewWindowBuilder,
 };
+
+pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>, tauri::Error> {
+    let cfg = comandos::carregar_configuracoes();
+    let is_en = cfg.idioma == "en";
+
+    let show_i = MenuItem::with_id(
+        app,
+        "show",
+        if is_en { "⚙️ Open Setup" } else { "⚙️ Abrir Setup" },
+        true,
+        None::<&str>,
+    )?;
+    let pergunta_i = MenuItem::with_id(
+        app,
+        "pergunta",
+        if is_en { "💬 Chat with Mii" } else { "💬 Conversar com o Mii" },
+        true,
+        None::<&str>,
+    )?;
+
+    let historico_i = MenuItem::with_id(
+        app,
+        "historico",
+        if is_en { "💡 Recent AI Messages" } else { "💡 Últimas Mensagens da IA" },
+        true,
+        None::<&str>,
+    )?;
+
+    let clipboard_i = MenuItem::with_id(
+        app,
+        "clipboard",
+        if is_en { "📋 Clipboard History" } else { "📋 Histórico de Copiar" },
+        true,
+        None::<&str>,
+    )?;
+    let timer_i = MenuItem::with_id(
+        app,
+        "timer",
+        if is_en { "⏱️ New Reminder" } else { "⏱️ Novo Lembrete" },
+        true,
+        None::<&str>,
+    )?;
+    let organiza_i = MenuItem::with_id(
+        app,
+        "organiza",
+        if is_en { "📁 Organize Files" } else { "📁 Organizar Arquivos" },
+        true,
+        None::<&str>,
+    )?;
+    let faxina_i = MenuItem::with_id(
+        app,
+        "faxina",
+        if is_en { "🧹 Clean Junk Files" } else { "🧹 Limpar Lixo do PC" },
+        true,
+        None::<&str>,
+    )?;
+    let otimizar_ram_i = MenuItem::with_id(
+        app,
+        "otimizar_ram",
+        if is_en { "⚡ Optimize RAM" } else { "⚡ Otimizar RAM" },
+        true,
+        None::<&str>,
+    )?;
+    let quit_i = MenuItem::with_id(
+        app,
+        "quit",
+        if is_en { "❌ Quit" } else { "❌ Sair" },
+        true,
+        None::<&str>,
+    )?;
+
+    Menu::with_items(
+        app,
+        &[
+            &show_i,
+            &pergunta_i,
+            &historico_i,
+            &clipboard_i,
+            &timer_i,
+            &organiza_i,
+            &faxina_i,
+            &otimizar_ram_i,
+            &quit_i,
+        ],
+    )
+}
+
+pub fn atualizar_menu_bandeja(app: &tauri::AppHandle) {
+    if let Some(tray) = app.tray_by_id("main-tray") {
+        if let Ok(menu) = construir_menu_bandeja(app) {
+            let _ = tray.set_menu(Some(menu));
+        }
+    }
+}
 
 fn main() {
     #[cfg(target_os = "linux")]
@@ -53,11 +149,25 @@ fn main() {
             comandos::perguntar_ao_mii,
             comandos::abrir_pergunta,
             comandos::limpar_historico_conversa,
-            comandos::limpar_cache_ram
+            comandos::limpar_cache_ram,
+            clipboard::obter_historico_clipboard,
+            clipboard::copiar_item_clipboard,
+            clipboard::limpar_historico_clipboard,
+            clipboard::abrir_clipboard,
+            clipboard::esconder_clipboard,
+            comandos::obter_historico_ia,
+            comandos::limpar_historico_ia,
+            comandos::reexibir_notificacao_ia,
+            comandos::abrir_historico,
+            comandos::esconder_historico,
+            comandos::verificar_atualizacoes_manual
         ])
         .setup(|app| {
             // Inicializa o motor de gatilhos proativos e checagem de updates
             gatilhos::iniciar_motor_proativo(app.handle().clone());
+
+            // Inicializa o monitoramento contínuo do clipboard
+            clipboard::iniciar_monitor_clipboard();
 
             // JANELA POPUP (NOTIFICAÇÕES)
 
@@ -158,115 +268,117 @@ fn main() {
                 let _ = pergunta_window.set_position(tauri::PhysicalPosition::new(x, y));
             }
 
+            // JANELA CLIPBOARD (HISTÓRICO DA ÁREA DE TRANSFERÊNCIA)
+
+            #[cfg(debug_assertions)]
+            let clipboard_url = WebviewUrl::External(
+                tauri::Url::parse("http://localhost:1420/clipboard.html").unwrap(),
+            );
+            #[cfg(not(debug_assertions))]
+            let clipboard_url = WebviewUrl::App("clipboard.html".into());
+
+            let clipboard_window = WebviewWindowBuilder::new(
+                app, "clipboard",
+                clipboard_url,
+            )
+            .inner_size(360.0, 420.0)
+            .decorations(false)
+            .transparent(true)
+            .resizable(false)
+            .shadow(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible(false)
+            .build()?;
+
+            if let Ok(Some(monitor)) = clipboard_window.primary_monitor() {
+                let size = monitor.size();
+                let window_size = clipboard_window
+                    .outer_size()
+                    .unwrap_or(tauri::PhysicalSize::new(360, 420));
+                let x = size.width.saturating_sub(window_size.width + 20);
+                let y = size.height.saturating_sub(window_size.height + 60);
+                let _ = clipboard_window.set_position(tauri::PhysicalPosition::new(x, y));
+            }
+
+            // JANELA HISTÓRICO (ÚLTIMAS MENSAGENS DA IA)
+
+            #[cfg(debug_assertions)]
+            let historico_url = WebviewUrl::External(
+                tauri::Url::parse("http://localhost:1420/historico.html").unwrap(),
+            );
+            #[cfg(not(debug_assertions))]
+            let historico_url = WebviewUrl::App("historico.html".into());
+
+            let historico_window = WebviewWindowBuilder::new(
+                app, "historico",
+                historico_url,
+            )
+            .inner_size(360.0, 420.0)
+            .decorations(false)
+            .transparent(true)
+            .resizable(false)
+            .shadow(false)
+            .always_on_top(true)
+            .skip_taskbar(true)
+            .visible(false)
+            .build()?;
+
+            if let Ok(Some(monitor)) = historico_window.primary_monitor() {
+                let size = monitor.size();
+                let window_size = historico_window
+                    .outer_size()
+                    .unwrap_or(tauri::PhysicalSize::new(360, 420));
+                let x = size.width.saturating_sub(window_size.width + 20);
+                let y = size.height.saturating_sub(window_size.height + 60);
+                let _ = historico_window.set_position(tauri::PhysicalPosition::new(x, y));
+            }
+
             // CONFIGURAÇÃO DA BANDEJA DO SISTEMA
-            let cfg = comandos::carregar_configuracoes();
-            let is_en = cfg.idioma == "en";
+            let menu = construir_menu_bandeja(app.handle())?;
 
-            let show_i = MenuItem::with_id(
-                app,
-                "show",
-                if is_en { "⚙️ Open Setup" } else { "⚙️ Abrir Setup" },
-                true,
-                None::<&str>,
-            )?;
-            let pergunta_i = MenuItem::with_id(
-                app,
-                "pergunta",
-                if is_en { "💬 Chat with Mii" } else { "💬 Conversar com o Mii" },
-                true,
-                None::<&str>,
-            )?;
-            let timer_i = MenuItem::with_id(
-                app,
-                "timer",
-                if is_en { "⏱️ New Reminder" } else { "⏱️ Novo Lembrete" },
-                true,
-                None::<&str>,
-            )?;
-            let organiza_i = MenuItem::with_id(
-                app,
-                "organiza",
-                if is_en { "📁 Organize Files" } else { "📁 Organizar Arquivos" },
-                true,
-                None::<&str>,
-            )?;
-            let faxina_i = MenuItem::with_id(
-                app,
-                "faxina",
-                if is_en { "🧹 Clean Junk Files" } else { "🧹 Limpar Lixo do PC" },
-                true,
-                None::<&str>,
-            )?;
-            let otimizar_ram_i = MenuItem::with_id(
-                app,
-                "otimizar_ram",
-                if is_en { "⚡ Optimize RAM" } else { "⚡ Otimizar RAM" },
-                true,
-                None::<&str>,
-            )?;
-            let quit_i = MenuItem::with_id(
-                app,
-                "quit",
-                if is_en { "❌ Quit" } else { "❌ Sair" },
-                true,
-                None::<&str>,
-            )?;
-
-            let menu = Menu::with_items(
-                app,
-                &[
-                    &show_i,
-                    &pergunta_i,
-                    &timer_i,
-                    &organiza_i,
-                    &faxina_i,
-                    &otimizar_ram_i,
-                    &quit_i,
-                ],
-            )?;
-
-            let _tray = TrayIconBuilder::new()
+            let _tray = TrayIconBuilder::with_id("main-tray")
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .icon(app.default_window_icon().unwrap().clone())
-                .on_menu_event(|app, event| match event.id.as_ref() {
-                    "quit" => std::process::exit(0),
-                    "show" => {
-                        if let Some(window) = app.get_webview_window("main") {
-                            let _ = window.center();
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                .on_menu_event(|app, event| {
+                    let id_str = event.id.as_ref();
+                    match id_str {
+                        "quit" => std::process::exit(0),
+                        "show" => {
+                            if let Some(window) = app.get_webview_window("main") {
+                                let _ = window.center();
+                                window.show().unwrap();
+                                window.set_focus().unwrap();
+                            }
                         }
-                    }
-                    "pergunta" => {
-                        comandos::limpar_historico_conversa();
-                        if let Some(window) = app.get_webview_window("pergunta") {
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                        "pergunta" => {
+                            comandos::limpar_historico_conversa();
+                            if let Some(window) = app.get_webview_window("pergunta") {
+                                window.show().unwrap();
+                                window.set_focus().unwrap();
+                            }
                         }
-                    }
-                    "timer" => {
-                        if let Some(window) = app.get_webview_window("timer") {
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                        "historico" => {
+                            comandos::abrir_historico(app.clone());
                         }
-                    }
-                    "faxina" => comandos::limpar_lixo_pc(app.clone()),
-                    "organiza" => comandos::organizar_downloads(app.clone()),
-                    "otimizar_ram" => comandos::limpar_cache_ram(app.clone()),
-                    _ => {}
-                })
-                .on_tray_icon_event(|tray, event| {
-                    if let TrayIconEvent::Click {
-                        button: MouseButton::Left,
-                        ..
-                    } = event
-                    {
-                        if let Some(window) = tray.app_handle().get_webview_window("main") {
-                            let _ = window.center();
-                            window.show().unwrap();
-                            window.set_focus().unwrap();
+                        "clipboard" => {
+                            if let Some(window) = app.get_webview_window("clipboard") {
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            }
                         }
+                        "timer" => {
+                            if let Some(window) = app.get_webview_window("timer") {
+                                window.show().unwrap();
+                                window.set_focus().unwrap();
+                            }
+                        }
+                        "faxina" => comandos::limpar_lixo_pc(app.clone()),
+                        "organiza" => comandos::organizar_downloads(app.clone()),
+                        "otimizar_ram" => comandos::limpar_cache_ram(app.clone()),
+                        _ => {}
                     }
                 })
                 .build(app)?;

@@ -30,6 +30,8 @@ export default defineConfig(async () => ({
         popup: "notificacao.html", 
         timer: "timer.html",
         pergunta: "pergunta.html",
+        clipboard: "clipboard.html",
+        historico: "historico.html",
       },
     },
   },

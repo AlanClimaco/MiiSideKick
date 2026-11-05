@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use std::fs;
 use std::path::Path;
 use std::sync::Mutex;
@@ -15,7 +16,7 @@ pub struct UserInfo {
     pub downloads: String,
 }
 
-#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default)]
 pub struct NotificacaoPayload {
     pub texto: String,
     pub tipo: String,
@@ -29,6 +30,12 @@ pub struct NotificacaoPayload {
     pub acao: Option<String>,
     #[serde(default)]
     pub acao_rotulo: Option<String>,
+    #[serde(default)]
+    pub eh_reconsulta: bool,
+    #[serde(default)]
+    pub timestamp: u64,
+    #[serde(default)]
+    pub hora_formatada: String,
 }
 
 impl NotificacaoPayload {
@@ -42,6 +49,7 @@ impl NotificacaoPayload {
             self.tocar_som,
             &self.acao,
             &self.acao_rotulo,
+            self.eh_reconsulta,
         ))
         .expect("Os argumentos da notificação devem ser serializáveis");
 
@@ -54,6 +62,80 @@ impl NotificacaoPayload {
 
 static ULTIMA_NOTIFICACAO: Mutex<Option<NotificacaoPayload>> = Mutex::new(None);
 static HISTORICO_CONVERSA: Mutex<Vec<serde_json::Value>> = Mutex::new(Vec::new());
+
+pub const LIMITE_HISTORICO_IA: usize = 5;
+static HISTORICO_NOTIFICACOES_IA: Mutex<VecDeque<NotificacaoPayload>> = Mutex::new(VecDeque::new());
+
+pub fn registrar_historico_ia(mut payload: NotificacaoPayload) {
+    payload.eh_reconsulta = false;
+    if payload.timestamp == 0 {
+        let now = std::time::SystemTime::now();
+        let millis = now
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64;
+        payload.timestamp = millis;
+        let total_secs = millis / 1000;
+        let mins = (total_secs / 60) % 60;
+        let hours = (total_secs / 3600) % 24;
+        payload.hora_formatada = format!("{:02}:{:02}", hours, mins);
+    }
+    if let Ok(mut hist) = HISTORICO_NOTIFICACOES_IA.lock() {
+        while hist.len() >= LIMITE_HISTORICO_IA {
+            hist.pop_back();
+        }
+        hist.push_front(payload);
+    }
+}
+
+#[tauri::command]
+pub fn obter_historico_ia() -> Vec<NotificacaoPayload> {
+    if let Ok(hist) = HISTORICO_NOTIFICACOES_IA.lock() {
+        hist.iter().cloned().collect()
+    } else {
+        Vec::new()
+    }
+}
+
+#[tauri::command]
+pub fn limpar_historico_ia() {
+    if let Ok(mut hist) = HISTORICO_NOTIFICACOES_IA.lock() {
+        hist.clear();
+    }
+}
+
+#[tauri::command]
+pub fn abrir_historico(app: AppHandle) {
+    if let Some(janela) = app.get_webview_window("historico") {
+        let _ = janela.show();
+        let _ = janela.unminimize();
+        let _ = janela.set_focus();
+    }
+}
+
+#[tauri::command]
+pub fn esconder_historico(app: AppHandle) {
+    if let Some(janela) = app.get_webview_window("historico") {
+        let _ = janela.hide();
+    }
+}
+
+#[tauri::command]
+pub fn reexibir_notificacao_ia(app: AppHandle, index: usize) {
+    let payload_opt = {
+        if let Ok(hist) = HISTORICO_NOTIFICACOES_IA.lock() {
+            hist.get(index).cloned()
+        } else {
+            None
+        }
+    };
+
+    if let Some(mut payload) = payload_opt {
+        payload.eh_reconsulta = true;
+        payload.tocar_som = false;
+        exibir_janela_notificacao(&app, &payload);
+    }
+}
 
 #[tauri::command]
 pub fn limpar_historico_conversa() {
@@ -133,10 +215,32 @@ pub fn disparar_notificacao_com_acao(
         None,
         None,
         false,
-        false,
+        true,
         acao,
         acao_rotulo,
     );
+}
+
+pub fn exibir_janela_notificacao(app: &AppHandle, payload: &NotificacaoPayload) {
+    if let Ok(mut mem) = ULTIMA_NOTIFICACAO.lock() {
+        *mem = Some(payload.clone());
+    }
+
+    if let Some(janela) = app.get_webview_window("popup") {
+        if let Ok(Some(monitor)) = janela.primary_monitor() {
+            let size = monitor.size();
+            let window_size = janela
+                .outer_size()
+                .unwrap_or(tauri::PhysicalSize::new(420, 240));
+            let x = size.width.saturating_sub(window_size.width + 20);
+            let y = size.height.saturating_sub(window_size.height + 60);
+            let _ = janela.set_position(tauri::PhysicalPosition::new(x, y));
+        }
+        let _ = janela.show();
+        let _ = janela.unminimize();
+
+        let _ = janela.eval(&payload.script_atualizacao());
+    }
 }
 
 pub fn disparar_notificacao_completa(
@@ -159,18 +263,22 @@ pub fn disparar_notificacao_completa(
         tocar_som,
         acao,
         acao_rotulo,
+        eh_reconsulta: false,
+        timestamp: 0,
+        hora_formatada: String::new(),
     };
 
-    if let Ok(mut mem) = ULTIMA_NOTIFICACAO.lock() {
-        *mem = Some(payload.clone());
+    // Interceptação de tela cheia / modo foco / jogo
+    if crate::sistema::atualizar_e_checar_foco() {
+        eprintln!(
+            "[Sistema]: Tela cheia ou tolerância ativa. Notificação enfileirada: {}",
+            payload.texto
+        );
+        crate::sistema::enfileirar_notificacao(payload);
+        return;
     }
 
-    if let Some(janela) = app.get_webview_window("popup") {
-        let _ = janela.show();
-        let _ = janela.unminimize();
-
-        let _ = janela.eval(&payload.script_atualizacao());
-    }
+    exibir_janela_notificacao(app, &payload);
 }
 
 #[cfg(target_os = "windows")]
@@ -900,6 +1008,8 @@ pub struct AppConfig {
     pub frequencia_alertas: String,
     #[serde(default = "default_idioma")]
     pub idioma: String,
+    #[serde(default)]
+    pub gostos_usuario: String,
 }
 
 impl Default for AppConfig {
@@ -913,6 +1023,7 @@ impl Default for AppConfig {
             alerta_interacao_bem_estar: true,
             frequencia_alertas: default_frequencia(),
             idioma: default_idioma(),
+            gostos_usuario: String::new(),
         }
     }
 }
@@ -974,11 +1085,25 @@ pub fn carregar_configuracoes() -> AppConfig {
         alerta_interacao_bem_estar: true,
         frequencia_alertas: default_frequencia(),
         idioma: default_idioma(),
+        gostos_usuario: String::new(),
+    }
+}
+
+pub fn salvar_configuracoes_arquivo(config: &AppConfig) -> Result<(), String> {
+    if let Some(caminho) = obter_caminho_config() {
+        if let Some(pai) = caminho.parent() {
+            let _ = fs::create_dir_all(pai);
+        }
+        let json = serde_json::to_string_pretty(config).map_err(|e| e.to_string())?;
+        fs::write(&caminho, json).map_err(|e| e.to_string())?;
+        Ok(())
+    } else {
+        Err("Não foi possível acessar a pasta de configurações".to_string())
     }
 }
 
 #[tauri::command]
-pub fn salvar_configuracoes(mut config: AppConfig) -> Result<(), String> {
+pub fn salvar_configuracoes(app: tauri::AppHandle, mut config: AppConfig) -> Result<(), String> {
     config.limite_caracteres = config.limite_caracteres.clamp(30, 500);
     if config.personalidade.trim().eq_ignore_ascii_case("sarcastico") {
         config.personalidade = "hostil".to_string();
@@ -995,16 +1120,11 @@ pub fn salvar_configuracoes(mut config: AppConfig) -> Result<(), String> {
     } else {
         config.idioma = "pt".to_string();
     }
-    if let Some(caminho) = obter_caminho_config() {
-        if let Some(pai) = caminho.parent() {
-            let _ = fs::create_dir_all(pai);
-        }
-        let json = serde_json::to_string_pretty(&config).map_err(|e| e.to_string())?;
-        fs::write(&caminho, json).map_err(|e| e.to_string())?;
-        Ok(())
-    } else {
-        Err("Não foi possível acessar a pasta de configurações".to_string())
+    let resultado = salvar_configuracoes_arquivo(&config);
+    if resultado.is_ok() {
+        crate::atualizar_menu_bandeja(&app);
     }
+    resultado
 }
 
 #[derive(serde::Deserialize)]
@@ -1161,6 +1281,35 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
         let limite_chars = config.limite_caracteres.clamp(30, 500);
 
+        let gostos = config.gostos_usuario.trim();
+        let deve_injetar_gostos = if !gostos.is_empty() {
+            let sorteio = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .subsec_nanos() % 100;
+            sorteio < 15 // 15% de chance de contextualizar gostos
+        } else {
+            false
+        };
+
+        let instrucao_gostos = if deve_injetar_gostos {
+            if is_en {
+                format!(
+                    "\nUSER INTERESTS & HOBBIES:\n\
+                    The user has mentioned the following interests: \"{gostos}\".\n\
+                    STRICT RULE: Only make a reference or analogy to an item from this list if it makes 100% subtle and natural sense with the current topic of conversation. Otherwise, completely ignore the list.\n"
+                )
+            } else {
+                format!(
+                    "\nGOSTOS E INTERESSES DO USUÁRIO:\n\
+                    O usuário possui os seguintes interesses: \"{gostos}\".\n\
+                    REGRA ESTRITA: Só faça referência ou analogia a algum item dessa lista se fizer sentido de forma 100% sutil e natural com o assunto atual da conversa. Caso contrário, ignore a lista completamente.\n"
+                )
+            }
+        } else {
+            String::new()
+        };
+
         let system_instruction = if is_en {
             format!(
                 "You are MiiSideKick, an expressive desktop companion. The user's name is: {user_name}.\n\
@@ -1170,6 +1319,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 Your creator and developer is Alan Clímaco (portfolio: https://alanclimaco.github.io/Portfolio/). If the user asks who created you, who is your developer, or asks about your projects, mention Alan Clímaco and provide his portfolio URL in the 'link' field with the label 'Alan Clímaco Portfolio'.\n\
                 EXTERNAL REFERENCES:\n\
                 For complex or technical questions requiring deeper reference (such as programming, Git, official docs), provide a concise summary within the character limit, add the official URL in the 'link' field and the source name in 'link_rotulo'. If no external reference is needed, set 'link' and 'link_rotulo' to null.\n\
+                {instrucao_gostos}\
                 MANDATORY RULES:\n\
                 1. {instrucao_tom}\n\
                 2. Strict maximum length: your response MUST have at most {limite_chars} characters. Be direct and concise. The URL and link label do NOT count towards the character limit.\n\
@@ -1192,6 +1342,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 Seu criador e desenvolvedor é Alan Clímaco (portfólio: https://alanclimaco.github.io/Portfolio/). Se o usuário perguntar quem te criou, quem é seu desenvolvedor ou pedir seus projetos, mencione Alan Clímaco e forneça a URL do portfólio dele no campo 'link' com o rótulo 'Portfólio de Alan Clímaco'.\n\
                 REFERÊNCIAS EXTERNAS:\n\
                 Para perguntas complexas ou técnicas que exijam aprofundamento (como programação, Git, documentações oficiais), dê uma resposta resumida dentro do limite de caracteres e adicione a URL oficial útil no campo 'link' e o nome da fonte no campo 'link_rotulo'. Se não for necessária referência externa, deixe 'link' e 'link_rotulo' como null.\n\
+                {instrucao_gostos}\
                 REGRAS OBRIGATÓRIAS:\n\
                 1. {instrucao_tom}\n\
                 2. Tamanho máximo estrito: sua resposta DEVE ter no máximo {limite_chars} caracteres. Seja direto e conciso. A URL e o rótulo do link NÃO contam no limite de caracteres da resposta.\n\
@@ -1389,6 +1540,23 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             "[Gemini API]: Notificação disparada com humor '{}' (link: {:?}): {}",
             reacao, gemini_resultado.link, resposta
         );
+
+        let payload_historico = NotificacaoPayload {
+            texto: resposta.clone(),
+            tipo: reacao.to_string(),
+            link: gemini_resultado.link.clone(),
+            link_rotulo: gemini_resultado.link_rotulo.clone(),
+            pode_responder: true,
+            tocar_som: false,
+            acao: None,
+            acao_rotulo: None,
+            eh_reconsulta: false,
+            timestamp: 0,
+            hora_formatada: String::new(),
+        };
+        registrar_historico_ia(payload_historico);
+        crate::atualizar_menu_bandeja(&app_clone);
+
         disparar_notificacao(
             &app_clone,
             &resposta,
@@ -1399,6 +1567,11 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             false,
         );
     });
+}
+
+#[tauri::command]
+pub fn verificar_atualizacoes_manual(app: AppHandle) -> Result<crate::gatilhos::UpdateCheckResult, String> {
+    crate::gatilhos::verificar_atualizacoes_manual(&app)
 }
 
 #[cfg(test)]
@@ -1419,6 +1592,9 @@ mod tests {
                 tocar_som,
                 acao: None,
                 acao_rotulo: None,
+                eh_reconsulta: false,
+                timestamp: 0,
+                hora_formatada: String::new(),
             };
 
             // A leitura inicial pelo comando deve manter a mesma permissão do envio ao vivo.
@@ -1428,6 +1604,7 @@ mod tests {
             assert_eq!(lida.tocar_som, tocar_som);
             assert_eq!(lida.acao, None);
             assert_eq!(lida.acao_rotulo, None);
+            assert_eq!(lida.eh_reconsulta, false);
 
             let script = payload.script_atualizacao();
             let argumentos = script
@@ -1436,7 +1613,7 @@ mod tests {
                 .strip_suffix("); }")
                 .unwrap();
             let valores: serde_json::Value = serde_json::from_str(argumentos).unwrap();
-            assert_eq!(valores.as_array().unwrap().len(), 8);
+            assert_eq!(valores.as_array().unwrap().len(), 9);
             assert_eq!(valores[0], payload.texto);
             assert_eq!(valores[1], payload.tipo);
             assert_eq!(valores[2], payload.link.unwrap());
@@ -1445,6 +1622,7 @@ mod tests {
             assert_eq!(valores[5], tocar_som);
             assert_eq!(valores[6], serde_json::Value::Null);
             assert_eq!(valores[7], serde_json::Value::Null);
+            assert_eq!(valores[8], false);
         }
     }
 
@@ -1456,6 +1634,7 @@ mod tests {
         assert!(!payload.tocar_som);
         assert_eq!(payload.acao, None);
         assert_eq!(payload.acao_rotulo, None);
+        assert!(!payload.eh_reconsulta);
     }
 
     #[test]
@@ -1476,16 +1655,79 @@ mod tests {
             tocar_som: false,
             acao: Some("limpar_cache_ram".to_string()),
             acao_rotulo: Some("Otimizar RAM".to_string()),
+            eh_reconsulta: false,
+            timestamp: 0,
+            hora_formatada: String::new(),
         };
 
         let json = serde_json::to_string(&payload).unwrap();
         let lida: NotificacaoPayload = serde_json::from_str(&json).unwrap();
         assert_eq!(lida.acao, Some("limpar_cache_ram".to_string()));
         assert_eq!(lida.acao_rotulo, Some("Otimizar RAM".to_string()));
+        assert!(!lida.eh_reconsulta);
 
         let script = payload.script_atualizacao();
         assert!(script.contains("limpar_cache_ram"));
         assert!(script.contains("Otimizar RAM"));
+    }
+
+    #[test]
+    fn test_historico_notificacoes_ia_limite_estrito_5() {
+        if let Ok(mut hist) = HISTORICO_NOTIFICACOES_IA.lock() {
+            hist.clear();
+        }
+
+        for i in 1..=8 {
+            let p = NotificacaoPayload {
+                texto: format!("Mensagem IA {}", i),
+                tipo: "feliz".to_string(),
+                link: None,
+                link_rotulo: None,
+                pode_responder: true,
+                tocar_som: false,
+                acao: None,
+                acao_rotulo: None,
+                eh_reconsulta: false,
+                timestamp: 0,
+                hora_formatada: String::new(),
+            };
+            registrar_historico_ia(p);
+        }
+
+        let lista = obter_historico_ia();
+        assert_eq!(lista.len(), 5);
+        // O mais recente (8) deve estar no topo (índice 0)
+        assert_eq!(lista[0].texto, "Mensagem IA 8");
+        assert_eq!(lista[1].texto, "Mensagem IA 7");
+        assert_eq!(lista[2].texto, "Mensagem IA 6");
+        assert_eq!(lista[3].texto, "Mensagem IA 5");
+        assert_eq!(lista[4].texto, "Mensagem IA 4");
+    }
+
+    #[test]
+    fn test_reexibir_notificacao_ia_payload_eh_reconsulta() {
+        if let Ok(mut hist) = HISTORICO_NOTIFICACOES_IA.lock() {
+            hist.clear();
+        }
+
+        let p = NotificacaoPayload {
+            texto: "Curiosidade sobre o universo".to_string(),
+            tipo: "explicando".to_string(),
+            link: None,
+            link_rotulo: None,
+            pode_responder: true,
+            tocar_som: true,
+            acao: None,
+            acao_rotulo: None,
+            eh_reconsulta: false,
+            timestamp: 0,
+            hora_formatada: String::new(),
+        };
+        registrar_historico_ia(p);
+
+        let itens = obter_historico_ia();
+        assert_eq!(itens.len(), 1);
+        assert!(!itens[0].eh_reconsulta);
     }
 
     #[test]
@@ -1931,7 +2173,7 @@ mod tests {
         let _ = fs::create_dir_all(&tmp_dir);
         let cfg_file = tmp_dir.join("config.json");
 
-        // 1. Serialização com personalidade, limite_caracteres e idioma explícitos
+        // 1. Serialização com personalidade, limite_caracteres, idioma e gostos_usuario explícitos
         let config = AppConfig {
             user_name: "Alan".to_string(),
             gemini_api_key: "AIzaSyTest123".to_string(),
@@ -1941,6 +2183,7 @@ mod tests {
             alerta_interacao_bem_estar: false,
             frequencia_alertas: "frequente".to_string(),
             idioma: "en".to_string(),
+            gostos_usuario: "anime, programação".to_string(),
         };
 
         let json = serde_json::to_string_pretty(&config).unwrap();
@@ -1955,8 +2198,9 @@ mod tests {
         assert!(!lida.alerta_interacao_bem_estar);
         assert_eq!(lida.frequencia_alertas, "frequente");
         assert_eq!(lida.idioma, "en");
+        assert_eq!(lida.gostos_usuario, "anime, programação");
 
-        // 2. Desserialização de JSON legado sem os campos personalidade, limite, alertas e idioma (deve usar defaults)
+        // 2. Desserialização de JSON legado sem os campos personalidade, limite, alertas, idioma e gostos (deve usar defaults)
         let json_legado = r#"{"user_name": "Climaco", "gemini_api_key": "AIzaSyLegacyKey"}"#;
         let lida_legada: AppConfig = serde_json::from_str(json_legado).unwrap();
         assert_eq!(lida_legada.user_name, "Climaco");
@@ -1967,6 +2211,7 @@ mod tests {
         assert!(lida_legada.alerta_interacao_bem_estar);
         assert_eq!(lida_legada.frequencia_alertas, "equilibrado");
         assert_eq!(lida_legada.idioma, "pt");
+        assert_eq!(lida_legada.gostos_usuario, "");
 
         // 3. Compatibilidade: se personalidade for "sarcastico", deve ser tratada como "hostil"
         let json_sarcastico = r#"{"user_name": "Alan", "gemini_api_key": "key123", "personalidade": "sarcastico", "limite_caracteres": 140}"#;

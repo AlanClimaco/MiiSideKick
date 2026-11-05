@@ -5,110 +5,6 @@ use tauri::AppHandle;
 
 use crate::comandos::{self, disparar_notificacao, disparar_notificacao_com_acao};
 
-/// Lista de curiosidades locais para fallback offline ou quando não há chave de API.
-pub const CURIOSIDADES_OFFLINE: &[(&str, &str)] = &[
-    (
-        "Em 1518, uma misteriosa epidemia fez centenas de pessoas dançarem sem parar por semanas em Estrasburgo.",
-        "explicando",
-    ),
-    (
-        "O inventor do frisbee foi cremado e suas cinzas foram transformadas em um frisbee após a sua morte.",
-        "normal",
-    ),
-    (
-        "Bananas são levemente radioativas por conterem potássio-40. Mas você precisaria comer 10 milhões de uma vez para sofrer algum dano.",
-        "feliz",
-    ),
-    (
-        "Corvos conseguem reconhecer rostos humanos e guardam rancor de pessoas específicas por anos.",
-        "assustado",
-    ),
-    (
-        "A guerra mais curta da história durou apenas 38 minutos, travada entre o Reino Unido e Zanzibar em 1896.",
-        "normal",
-    ),
-    (
-        "O mel puro nunca estraga. Arqueólogos acharam potes de mel de 3.000 anos em tumbas egípcias perfeitamente comestíveis.",
-        "feliz",
-    ),
-    (
-        "Polvos têm três corações e o sangue deles é azul por causa da hemocianina à base de cobre.",
-        "explicando",
-    ),
-    (
-        "Em 1983, Stanislav Petrov evitou uma guerra nuclear mundial ao deduzir que o alerta de ataque no radar era um falso alarme.",
-        "assustado",
-    ),
-    (
-        "Tubarões já existiam na Terra antes mesmo de existirem árvores e anéis em Saturno.",
-        "normal",
-    ),
-    (
-        "O criador da prova do bafômetro foi preso anos depois por dirigir embriagado.",
-        "bocejo",
-    ),
-    (
-        "Formigas nunca dormem no sentido humano e conseguem carregar até 50 vezes o próprio peso.",
-        "explicando",
-    ),
-    (
-        "Cavalos-marinhos machos são os que engravidam e dão à luz centenas de filhotes.",
-        "feliz",
-    ),
-];
-
-/// Lista de curiosidades locais em inglês para fallback offline ou quando não há chave de API.
-pub const CURIOSIDADES_OFFLINE_EN: &[(&str, &str)] = &[
-    (
-        "In 1518, a mysterious choreomania epidemic made hundreds of people dance uncontrollably for weeks in Strasbourg.",
-        "explicando",
-    ),
-    (
-        "The inventor of the Frisbee was cremated and his ashes were turned into Frisbees after his death.",
-        "normal",
-    ),
-    (
-        "Bananas are slightly radioactive because they contain potassium-40. But you would need to eat 10 million at once to suffer any harm.",
-        "feliz",
-    ),
-    (
-        "Crows can recognize human faces and hold grudges against specific individuals for years.",
-        "assustado",
-    ),
-    (
-        "The shortest war in history lasted only 38 minutes, fought between the United Kingdom and Zanzibar in 1896.",
-        "normal",
-    ),
-    (
-        "Pure honey never spoils. Archaeologists have found 3,000-year-old honey in Egyptian tombs that is still completely edible.",
-        "feliz",
-    ),
-    (
-        "Octopuses have three hearts and their blood is blue because of copper-based hemocyanin.",
-        "explicando",
-    ),
-    (
-        "In 1983, Stanislav Petrov averted a global nuclear war by correctly deducing that the missile radar alert was a false alarm.",
-        "assustado",
-    ),
-    (
-        "Sharks existed on Earth before trees and before Saturn had rings.",
-        "normal",
-    ),
-    (
-        "The inventor of the breathalyzer was arrested years later for driving under the influence.",
-        "bocejo",
-    ),
-    (
-        "Ants never sleep in the human sense and can carry up to 50 times their own body weight.",
-        "explicando",
-    ),
-    (
-        "Male seahorses are the ones that get pregnant and give birth to hundreds of babies.",
-        "feliz",
-    ),
-];
-
 /// Compara versão remota com a versão local da aplicação seguindo semver simples.
 pub fn comparar_versoes(remota: &str, local: &str) -> Ordering {
     let parse = |v: &str| -> Vec<u64> {
@@ -129,10 +25,108 @@ pub fn comparar_versoes(remota: &str, local: &str) -> Ordering {
     r.len().cmp(&l.len())
 }
 
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
+pub struct UpdateCheckResult {
+    pub tem_atualizacao: bool,
+    pub versao_atual: String,
+    pub versao_nova: Option<String>,
+    pub url_release: Option<String>,
+    pub mensagem: String,
+}
+
 #[derive(serde::Deserialize)]
 struct GithubRelease {
     tag_name: String,
     html_url: String,
+}
+
+/// Verifica manualmente se há nova versão publicada no repositório do GitHub.
+pub fn verificar_atualizacoes_manual(app: &AppHandle) -> Result<UpdateCheckResult, String> {
+    let cfg = crate::comandos::carregar_configuracoes();
+    let is_en = cfg.idioma == "en";
+    let versao_local = env!("CARGO_PKG_VERSION");
+    let url = "https://api.github.com/repos/AlanClimaco/MiiSideKick/releases/latest";
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(8))
+        .build()
+        .map_err(|e| e.to_string())?;
+
+    let response = client
+        .get(url)
+        .header("User-Agent", "MiiSideKick-App")
+        .header("Accept", "application/vnd.github.v3+json")
+        .send()
+        .map_err(|e| {
+            if is_en {
+                format!("Failed to connect to update server: {}", e)
+            } else {
+                format!("Falha ao conectar ao servidor de atualizações: {}", e)
+            }
+        })?;
+
+    if response.status().is_success() {
+        if let Ok(release) = response.json::<GithubRelease>() {
+            if comparar_versoes(&release.tag_name, versao_local) == Ordering::Greater {
+                let msg = if is_en {
+                    format!(
+                        "New version available: {}!\nClick below to check out what's new.",
+                        release.tag_name
+                    )
+                } else {
+                    format!(
+                        "Nova versão disponível: {}!\nClique abaixo para conferir as novidades.",
+                        release.tag_name
+                    )
+                };
+                let rotulo = if is_en { "View Update" } else { "Ver Atualização" };
+                disparar_notificacao(
+                    app,
+                    &msg,
+                    "feliz",
+                    Some(release.html_url.clone()),
+                    Some(rotulo.to_string()),
+                    false,
+                    true,
+                );
+
+                let ret_msg = if is_en {
+                    format!("New version available: {}!", release.tag_name)
+                } else {
+                    format!("Nova versão disponível: {}!", release.tag_name)
+                };
+
+                return Ok(UpdateCheckResult {
+                    tem_atualizacao: true,
+                    versao_atual: versao_local.to_string(),
+                    versao_nova: Some(release.tag_name),
+                    url_release: Some(release.html_url),
+                    mensagem: ret_msg,
+                });
+            } else {
+                let ret_msg = if is_en {
+                    format!("You are already on the latest version (v{})!", versao_local)
+                } else {
+                    format!("Você já está na versão mais recente (v{})!", versao_local)
+                };
+
+                return Ok(UpdateCheckResult {
+                    tem_atualizacao: false,
+                    versao_atual: versao_local.to_string(),
+                    versao_nova: None,
+                    url_release: None,
+                    mensagem: ret_msg,
+                });
+            }
+        }
+    }
+
+    let erro = if is_en {
+        "Unable to check for updates. Please try again later."
+    } else {
+        "Não foi possível verificar atualizações no momento."
+    };
+    Err(erro.to_string())
 }
 
 /// Verifica se há nova versão publicada no repositório do GitHub.
@@ -248,101 +242,125 @@ pub fn verificar_downloads_acumulados() -> bool {
     false
 }
 
-/// Gera ou seleciona uma curiosidade para o alerta proativo.
+/// Gera uma curiosidade para o alerta proativo consultando a API do Gemini.
+/// Se a requisição for bem-sucedida, retorna Some((texto, reacao)).
+/// Se falhar por qualquer motivo (sem chave, sem internet, erro de status ou cota), retorna None.
 pub fn obter_curiosidade_proativa(
     api_key: &str,
     limite_chars: u32,
     personalidade: &str,
-    indice_fallback: usize,
     idioma: &str,
-) -> (String, String) {
-    let is_en = idioma.trim().eq_ignore_ascii_case("en");
-
-    if !api_key.trim().is_empty() {
-        let prompt = if is_en {
-            let t = match personalidade {
-                "hostil" | "sarcastico" => {
-                    "Adopt a tone of dark humor, morbid wit, sarcasm, and irony (bizarre historical facts, ironic deaths, cosmic absurdities). NOTE: NEVER insult or curse at the user directly, as they did not ask any question; direct cynicism and sarcasm strictly at the story or fact itself."
-                }
-                "educado" => "Be extremely polite, formal, patient, and courteous.",
-                "engracado" => "Be funny, witty, playful, and crack lighthearted jokes and puns.",
-                "direto" => "Be 100% serious, technical, concise, and straight to the point.",
-                _ => "Be balanced, curious, friendly, and engaging.",
-            };
-            format!(
-                "You are MiiSideKick. Tell a short, fascinating curiosity in English (science, history, bizarre facts, or everyday ironies). \
-                Tone instruction: {t} \
-                STRICT maximum length: {limite_chars} characters. \
-                STRICTLY return a JSON in the format: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<text>\"}} without markdown."
-            )
-        } else {
-            let t = match personalidade {
-                "hostil" | "sarcastico" => {
-                    "Adote um tom de humor negro, mórbido, ácido e sarcasmo inteligente (fatos bizarros, mortes cômicas ou ironias da história). ATENÇÃO: NUNCA xingue nem ofenda o usuário diretamente, pois ele não fez pergunta alguma; direcione o cinismo e deboche exclusivamente ao fato narrado."
-                }
-                "educado" => "Seja extremamente educado, formal, paciente e gentil.",
-                "engracado" => "Seja muito bem-humorado, brincalhão, faça piadinhas leves e trocadilhos.",
-                "direto" => "Seja 100% sério, técnico, conciso e direto ao ponto.",
-                _ => "Seja equilibrado, curioso, amigável e descontraído.",
-            };
-            format!(
-                "Você é o MiiSideKick. Conte uma curiosidade curta, curiosa e fascinante em português (ciência, história, fatos bizarros ou ironias cotidianas). \
-                Instrução de tom da personalidade: {t} \
-                Tamanho máximo ESTRITO: {limite_chars} caracteres. \
-                Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<texto>\"}} sem markdown."
-            )
-        };
-
-        let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-            api_key.trim()
-        );
-
-        let payload = serde_json::json!({
-            "contents": [
-                {
-                    "role": "user",
-                    "parts": [{ "text": prompt }]
-                }
-            ],
-            "generationConfig": {
-                "responseMimeType": "application/json"
-            }
-        });
-
-        if let Ok(client) = reqwest::blocking::Client::builder()
-            .timeout(Duration::from_secs(6))
-            .build()
-        {
-            if let Ok(res) = client.post(&url).json(&payload).send() {
-                if res.status().is_success() {
-                    if let Ok(val) = res.json::<serde_json::Value>() {
-                        if let Some(txt) = val["candidates"][0]["content"]["parts"][0]["text"].as_str() {
-                            if let Ok(parsed) = serde_json::from_str::<serde_json::Value>(txt) {
-                                if let Some(resposta) = parsed["resposta"].as_str() {
-                                    let reacao = parsed["reacao"]
-                                        .as_str()
-                                        .map(|r| comandos::validar_reacao(Some(r)))
-                                        .unwrap_or("explicando");
-                                    return (resposta.to_string(), reacao.to_string());
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        }
+    gostos_usuario: &str,
+) -> Option<(String, String)> {
+    let api_key_trim = api_key.trim();
+    if api_key_trim.is_empty() {
+        return None;
     }
 
-    // Fallback offline
-    let lista = if is_en {
-        CURIOSIDADES_OFFLINE_EN
+    let is_en = idioma.trim().eq_ignore_ascii_case("en");
+    let gostos = gostos_usuario.trim();
+    let injetar_gostos = if !gostos.is_empty() {
+        let sorteio = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .subsec_nanos() % 100;
+        sorteio < 25 // 25% de chance de personalizar curiosidades
     } else {
-        CURIOSIDADES_OFFLINE
+        false
     };
-    let idx = indice_fallback % lista.len();
-    let (texto, reacao) = lista[idx];
-    (texto.to_string(), reacao.to_string())
+
+    let prompt = if is_en {
+        let foco = if injetar_gostos {
+            format!("related to one of the user's interests: \"{gostos}\"")
+        } else {
+            "science, history, bizarre facts, or everyday ironies".to_string()
+        };
+        let t = match personalidade {
+            "hostil" | "sarcastico" => {
+                "Adopt a tone of dark humor, morbid wit, sarcasm, and irony (bizarre historical facts, ironic deaths, cosmic absurdities). NOTE: NEVER insult or curse at the user directly, as they did not ask any question; direct cynicism and sarcasm strictly at the story or fact itself."
+            }
+            "educado" => "Be extremely polite, formal, patient, and courteous.",
+            "engracado" => "Be funny, witty, playful, and crack lighthearted jokes and puns.",
+            "direto" => "Be 100% serious, technical, concise, and straight to the point.",
+            _ => "Be balanced, curious, friendly, and engaging.",
+        };
+        format!(
+            "You are MiiSideKick. Tell a short, fascinating curiosity in English ({foco}). \
+            Tone instruction: {t} \
+            STRICT maximum length: {limite_chars} characters. \
+            STRICTLY return a JSON in the format: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<text>\"}} without markdown."
+        )
+    } else {
+        let foco = if injetar_gostos {
+            format!("relacionada a um dos interesses do usuário: \"{gostos}\"")
+        } else {
+            "ciência, história, fatos bizarros ou ironias cotidianas".to_string()
+        };
+        let t = match personalidade {
+            "hostil" | "sarcastico" => {
+                "Adote um tom de humor negro, mórbido, ácido e sarcasmo inteligente (fatos bizarros, mortes cômicas ou ironias da história). ATENÇÃO: NUNCA xingue nem ofenda o usuário diretamente, pois ele não fez pergunta alguma; direcione o cinismo e deboche exclusivamente ao fato narrado."
+            }
+            "educado" => "Seja extremamente educado, formal, paciente e gentil.",
+            "engracado" => "Seja muito bem-humorado, brincalhão, faça piadinhas leves e trocadilhos.",
+            "direto" => "Seja 100% sério, técnico, conciso e direto ao ponto.",
+            _ => "Seja equilibrado, curioso, amigável e descontraído.",
+        };
+        format!(
+            "Você é o MiiSideKick. Conte uma curiosidade curta, curiosa e fascinante em português ({foco}). \
+            Instrução de tom da personalidade: {t} \
+            Tamanho máximo ESTRITO: {limite_chars} caracteres. \
+            Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<normal|feliz|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<texto>\"}} sem markdown."
+        )
+    };
+
+    let url = format!(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
+        api_key_trim
+    );
+
+    let payload = serde_json::json!({
+        "contents": [
+            {
+                "role": "user",
+                "parts": [{ "text": prompt }]
+            }
+        ],
+        "generationConfig": {
+            "responseMimeType": "application/json"
+        }
+    });
+
+    let client = reqwest::blocking::Client::builder()
+        .timeout(Duration::from_secs(6))
+        .build()
+        .ok()?;
+
+    let res = client.post(&url).json(&payload).send().ok()?;
+    if !res.status().is_success() {
+        return None;
+    }
+
+    let val = res.json::<serde_json::Value>().ok()?;
+    let raw_text = val["candidates"][0]["content"]["parts"][0]["text"].as_str()?;
+    let clean_json = if raw_text.starts_with("```json") {
+        raw_text.trim_start_matches("```json").trim_end_matches("```").trim()
+    } else if raw_text.starts_with("```") {
+        raw_text.trim_start_matches("```").trim_end_matches("```").trim()
+    } else {
+        raw_text.trim()
+    };
+    let parsed = serde_json::from_str::<serde_json::Value>(clean_json).ok()?;
+    let resposta = parsed["resposta"].as_str()?;
+    if resposta.trim().is_empty() {
+        return None;
+    }
+
+    let reacao = parsed["reacao"]
+        .as_str()
+        .map(|r| comandos::validar_reacao(Some(r)))
+        .unwrap_or("explicando");
+
+    Some((resposta.trim().to_string(), reacao.to_string()))
 }
 
 struct EstadoMotor {
@@ -355,7 +373,6 @@ struct EstadoMotor {
     ultimo_alerta_ram: Option<Instant>,
     leituras_ram_alta: usize,
     contador_bem_estar: usize,
-    indice_curiosidade: usize,
 }
 
 static MOTOR_INICIADO: Mutex<bool> = Mutex::new(false);
@@ -380,13 +397,33 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
             ultimo_alerta_ram: None,
             leituras_ram_alta: 0,
             contador_bem_estar: 0,
-            indice_curiosidade: 0,
         };
 
         // Pequeno atraso inicial de 8 segundos antes da primeira verificação de update
         std::thread::sleep(Duration::from_secs(8));
 
+        let mut segundos_acumulados = 0u64;
+
         loop {
+            std::thread::sleep(Duration::from_secs(1));
+
+            // Esvazia fila de notificações se não estiver em tela cheia nem em período de tolerância
+            if !crate::sistema::atualizar_e_checar_foco() && crate::sistema::tamanho_fila() > 0 {
+                if let Some(pendente) = crate::sistema::desenfileirar_notificacao() {
+                    eprintln!(
+                        "[Sistema]: Descarregando notificação pendente pós-tela cheia: {}",
+                        pendente.texto
+                    );
+                    crate::comandos::exibir_janela_notificacao(&app, &pendente);
+                }
+            }
+
+            segundos_acumulados += 1;
+            if segundos_acumulados < 30 {
+                continue;
+            }
+            segundos_acumulados = 0;
+
             let config = comandos::carregar_configuracoes();
             let is_en = config.idioma == "en";
 
@@ -484,7 +521,7 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                             None,
                             None,
                             false,
-                            false,
+                            true,
                         );
                     }
 
@@ -510,7 +547,7 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                                 None,
                                 None,
                                 false,
-                                false,
+                                true,
                             );
                         }
                     }
@@ -538,25 +575,41 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                         };
                         estado.contador_bem_estar += 1;
 
-                        disparar_notificacao(&app, msg, "feliz", None, None, false, false);
+                        disparar_notificacao(&app, msg, "feliz", None, None, false, true);
                     }
 
                     if !disparou {
                         let tempo_curiosidade = agora.duration_since(estado.ultimo_alerta_curiosidade);
                         if tempo_curiosidade >= Duration::from_secs(curiosidade_minutos * 60) {
                             estado.ultimo_alerta_curiosidade = agora;
-                            estado.ultimo_disparo_global = agora;
 
-                            let (texto, reacao) = obter_curiosidade_proativa(
+                            if let Some((texto, reacao)) = obter_curiosidade_proativa(
                                 &config.gemini_api_key,
                                 config.limite_caracteres,
                                 &config.personalidade,
-                                estado.indice_curiosidade,
                                 &config.idioma,
-                            );
-                            estado.indice_curiosidade += 1;
+                                &config.gostos_usuario,
+                            ) {
+                                estado.ultimo_disparo_global = agora;
 
-                            disparar_notificacao(&app, &texto, &reacao, None, None, true, false);
+                                let payload_historico = crate::comandos::NotificacaoPayload {
+                                    texto: texto.clone(),
+                                    tipo: reacao.clone(),
+                                    link: None,
+                                    link_rotulo: None,
+                                    pode_responder: true,
+                                    tocar_som: true,
+                                    acao: None,
+                                    acao_rotulo: None,
+                                    eh_reconsulta: false,
+                                    timestamp: 0,
+                                    hora_formatada: String::new(),
+                                };
+                                crate::comandos::registrar_historico_ia(payload_historico);
+                                crate::atualizar_menu_bandeja(&app);
+
+                                disparar_notificacao(&app, &texto, &reacao, None, None, true, true);
+                            }
                         }
                     }
                 }
@@ -606,43 +659,12 @@ mod tests {
     }
 
     #[test]
-    fn test_curiosidades_offline_validas() {
-        assert!(!CURIOSIDADES_OFFLINE.is_empty());
-        for (texto, reacao) in CURIOSIDADES_OFFLINE {
-            assert!(!texto.trim().is_empty());
-            assert!(texto.chars().count() <= 200);
-            assert!(["normal", "feliz", "frustrado", "assustado", "explicando", "bocejo", "lambendo", "raiva"]
-                .contains(reacao));
-        }
+    fn test_obter_curiosidade_proativa_sem_chave_ou_offline_retorna_none() {
+        // Sem chave de API ou com chave vazia deve retornar None
+        assert_eq!(obter_curiosidade_proativa("", 70, "espelho", "pt", ""), None);
+        assert_eq!(obter_curiosidade_proativa("   ", 70, "espelho", "en", ""), None);
 
-        assert!(!CURIOSIDADES_OFFLINE_EN.is_empty());
-        assert_eq!(CURIOSIDADES_OFFLINE_EN.len(), CURIOSIDADES_OFFLINE.len());
-        for (texto, reacao) in CURIOSIDADES_OFFLINE_EN {
-            assert!(!texto.trim().is_empty());
-            assert!(texto.chars().count() <= 200);
-            assert!(["normal", "feliz", "frustrado", "assustado", "explicando", "bocejo", "lambendo", "raiva"]
-                .contains(reacao));
-        }
-    }
-
-    #[test]
-    fn test_obter_curiosidade_proativa_offline() {
-        let (texto_pt, reacao_pt) = obter_curiosidade_proativa("", 70, "espelho", 0, "pt");
-        assert!(!texto_pt.is_empty());
-        assert!(!reacao_pt.is_empty());
-
-        let (texto_en, reacao_en) = obter_curiosidade_proativa("", 70, "espelho", 0, "en");
-        assert!(!texto_en.is_empty());
-        assert!(!reacao_en.is_empty());
-        assert_ne!(texto_pt, texto_en);
-
-        let (texto_hostil_pt, reacao_hostil_pt) = obter_curiosidade_proativa("", 70, "hostil", 1, "pt");
-        assert!(!texto_hostil_pt.is_empty());
-        assert!(!reacao_hostil_pt.is_empty());
-
-        let (texto_hostil_en, reacao_hostil_en) = obter_curiosidade_proativa("", 70, "hostil", 1, "en");
-        assert!(!texto_hostil_en.is_empty());
-        assert!(!reacao_hostil_en.is_empty());
-        assert_ne!(texto_hostil_pt, texto_hostil_en);
+        // Chave fictícia / erro de autenticação ou rede deve retornar None
+        assert_eq!(obter_curiosidade_proativa("chave_invalida_mock", 70, "hostil", "pt", ""), None);
     }
 }

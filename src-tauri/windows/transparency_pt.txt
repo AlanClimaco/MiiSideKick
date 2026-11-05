@@ -1,0 +1,29 @@
+===================================================================
+TERMOS DE TRANSPARÊNCIA, PRIVACIDADE E USO DO SISTEMA - MIISIDEKICK
+===================================================================
+
+O MiiSideKick preza pela total transparência sobre o funcionamento do aplicativo e pelo respeito absoluto à privacidade do usuário. Por favor, leia atentamente as informações sobre o uso de recursos do computador antes de concluir a instalação:
+
+1. INTELIGÊNCIA ARTIFICIAL (API GOOGLE GEMINI):
+   - O MiiSideKick conecta-se à API pública do Google Gemini exclusivamente para responder às perguntas do usuário, gerar curiosidades e simular reações expressivas de personalidade.
+   - Sua chave de API pessoal é armazenada localmente e de forma restrita no seu computador.
+   - Nenhuma conversa, chave ou dado pessoal é coletado, monitorado ou compartilhado com servidores externos do desenvolvedor.
+
+2. OPERAÇÃO EM SEGUNDO PLANO (BANDEJA DO SISTEMA):
+   - O aplicativo executa de forma leve e contínua na Bandeja do Sistema (System Tray), pronto para atender comandos rápidos sem poluir a barra de tarefas.
+   - O menu da bandeja permite abrir o painel de configurações, acionar o chat, configurar lembretes, organizar arquivos e otimizar a memória a qualquer momento.
+
+3. MONITORAMENTO E OTIMIZAÇÃO DE MEMÓRIA RAM:
+   - O assistente monitora periodicamente o uso da memória RAM do sistema operacional para identificar cenários de sobrecarga (ex: uso superior a 85%).
+   - A otimização e liberação de cache nunca são executadas de forma invasiva: o Mii sempre emite um alerta amigável na tela solicitando a sua confirmação prévia antes de agir.
+
+4. ATALHO GLOBAL DE TECLADO:
+   - O instalador registra o atalho global Ctrl + Shift + M no sistema operacional.
+   - Esse atalho permite convocar a caixa de diálogo com o Mii imediatamente a partir de qualquer aplicativo ou jogo em execução, sem necessidade de navegar até a bandeja.
+
+5. ARMAZENAMENTO LOCAL EXCLUSIVO EM APPDATA:
+   - Todas as configurações, histórico temporário e credenciais são gravados exclusivamente no diretório local do usuário:
+     %APPDATA%\MiiSideKick
+   - O MiiSideKick NÃO possui mecanismos de telemetria oculta, rastreamento de comportamento ou exibição de anúncios.
+
+Ao clicar em "Avançar" ou "Concordo", você declara estar ciente de como o MiiSideKick opera no seu sistema.

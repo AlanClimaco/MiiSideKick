@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Últimas Mensagens da IA</title>
+    <link rel="stylesheet" href="/src/css/global.css" />
+    <link rel="stylesheet" href="/src/css/historico.css" />
+</head>
+<body class="historico-body">
+    <div class="glass-card historico-card">
+        <div class="historico-header">
+            <div class="header-left">
+                <img src="/src/assets/reacoes/mii-feliz.png" alt="Mii" class="historico-avatar" id="historicoAvatar">
+                <div class="header-text">
+                    <h3 class="historico-title" id="historicoTitle">Mensagens da IA</h3>
+                    <span class="historico-subtitle" id="historicoSubtitle">Últimas interações e curiosidades</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-clear" id="btnLimpar" type="button" title="Limpar histórico" aria-label="Limpar histórico">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18m-2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                </button>
+                <button class="btn-fechar" id="btnFechar" type="button" title="Fechar" aria-label="Fechar histórico">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="historico-list" id="historicoList">
+            <!-- Cards de mensagens geradas pela IA -->
+        </div>
+
+        <div class="historico-empty" id="historicoEmpty" style="display: none;">
+            <p id="emptyMessage">Nenhuma mensagem recente da IA ainda.</p>
+        </div>
+    </div>
+
+    <script type="module" src="/src/historico/historico.ts"></script>
+</body>
+</html>

@@ -1,9 +1,15 @@
 import { invoke } from "@tauri-apps/api/core";
 import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
 import { openUrl } from '@tauri-apps/plugin-opener';
+import type { AppConfig, UserInfo } from "./types";
+
+const FORMSPREE_ENDPOINT = "https://formspree.io/f/xvkkyvbv";
 
 // Elementos da interface
 const userName = document.getElementById("userName") as HTMLInputElement;
+const userInterests = document.getElementById("userInterests") as HTMLInputElement;
+const labelUserInterests = document.getElementById("labelUserInterests");
+const hintUserInterests = document.getElementById("hintUserInterests");
 const geminiApiKey = document.getElementById("geminiApiKey") as HTMLInputElement;
 const btnToggleApiKey = document.getElementById("btnToggleApiKey") as HTMLButtonElement;
 const folderPath = document.getElementById("folderPath") as HTMLInputElement;
@@ -21,6 +27,34 @@ const checkAlertaInteracaoBemEstar = document.getElementById("checkAlertaInterac
 const frequencyButtons = document.querySelectorAll<HTMLButtonElement>(".frequency-btn");
 const frequencyHint = document.getElementById("frequencyHint");
 
+// Elementos de Atalhos e Feedback
+const keyModifier = document.getElementById("keyModifier");
+const feedbackForm = document.getElementById("feedbackForm") as HTMLFormElement | null;
+const feedbackName = document.getElementById("feedbackName") as HTMLInputElement | null;
+const feedbackType = document.getElementById("feedbackType") as HTMLSelectElement | null;
+const feedbackMessage = document.getElementById("feedbackMessage") as HTMLTextAreaElement | null;
+const btnEnviarFeedback = document.getElementById("btnEnviarFeedback") as HTMLButtonElement | null;
+const feedbackStatus = document.getElementById("feedbackStatus") as HTMLDivElement | null;
+
+// Elementos de Atualização
+const btnCheckUpdates = document.getElementById("btnCheckUpdates") as HTMLButtonElement | null;
+const labelCheckUpdates = document.getElementById("labelCheckUpdates");
+const updateStatusMsg = document.getElementById("updateStatusMsg") as HTMLDivElement | null;
+
+interface UpdateCheckResult {
+    tem_atualizacao: boolean;
+    versao_atual: string;
+    versao_nova?: string;
+    url_release?: string;
+    mensagem: string;
+}
+
+// Configuração do modificador de tecla de acordo com a plataforma (Mac vs Windows/Linux)
+const isMac = typeof navigator !== "undefined" && navigator.userAgent.toLowerCase().includes("mac");
+if (keyModifier) {
+    keyModifier.textContent = isMac ? "Cmd" : "Ctrl";
+}
+
 // Estado da aplicação
 let idiomaAtual = "pt";
 let personalidadeAtual = "espelho";
@@ -35,6 +69,9 @@ interface Translations {
     labelUserName: string;
     placeholderUserName: string;
     placeholderUserNameError: string;
+    labelUserInterests: string;
+    placeholderUserInterests: string;
+    hintUserInterests: string;
     sectionPersonality: string;
     personalityNames: Record<string, string>;
     personalityHints: Record<string, string>;
@@ -62,17 +99,40 @@ interface Translations {
     frequencyHints: Record<string, string>;
     sectionStartup: string;
     checkAutostart: string;
+    sectionShortcuts: string;
+    shortcutChatLabel: string;
+    shortcutChatDesc: string;
+    sectionFeedback: string;
+    hintFeedback: string;
+    labelFeedbackName: string;
+    placeholderFeedbackName: string;
+    labelFeedbackType: string;
+    optSuggestion: string;
+    optBug: string;
+    optPraise: string;
+    labelFeedbackMessage: string;
+    placeholderFeedbackMessage: string;
+    btnSendFeedback: string;
+    btnSendingFeedback: string;
+    feedbackSuccess: string;
+    feedbackError: string;
+    btnCheckUpdates: string;
+    btnCheckingUpdates: string;
     tutorialLabel: string;
     tutorialStep1Alt: string;
     tutorialStep2Alt: string;
     tutorialDesc: string;
     btnSave: string;
     footerDevBy: string;
+    tabGeneral: string;
+    tabAI: string;
+    tabAlerts: string;
+    tabTools: string;
 }
 
 const TRANSLATIONS: Record<string, Translations> = {
     pt: {
-        windowTitle: "Configurações do MiiSideKick",
+        windowTitle: "MiiSideKick — Configurações (v1.6.0)",
         headerTitle: "Configurações",
         headerSubtitle: "Personalize seu assistente local.",
         sectionLanguage: "Idioma / Language",
@@ -80,6 +140,9 @@ const TRANSLATIONS: Record<string, Translations> = {
         labelUserName: "Como devo te chamar?",
         placeholderUserName: "Lendo do sistema...",
         placeholderUserNameError: "Erro de conexão",
+        labelUserInterests: "Seus interesses e gostos (opcional)",
+        placeholderUserInterests: "Ex: anime, xadrez, café, programação...",
+        hintUserInterests: "O Mii pode usar seus gostos de vez em quando para fazer analogias ou puxar assunto de forma sutil.",
         sectionPersonality: "Personalidade",
         personalityNames: {
             espelho: "Espelho",
@@ -124,15 +187,38 @@ const TRANSLATIONS: Record<string, Translations> = {
         },
         sectionStartup: "Inicialização do Sistema",
         checkAutostart: "Iniciar junto com o Windows",
+        sectionShortcuts: "Atalhos do Teclado",
+        shortcutChatLabel: "Conversa Rápida com o Mii",
+        shortcutChatDesc: "Abre a caixa de diálogo instantânea a partir de qualquer aplicativo.",
+        sectionFeedback: "Enviar Feedback",
+        hintFeedback: "Tem uma sugestão, encontrou um problema ou quer elogiar o projeto? Deixe sua mensagem!",
+        labelFeedbackName: "Seu Nome / Apelido (opcional)",
+        placeholderFeedbackName: "Ex: Alex",
+        labelFeedbackType: "Tipo de Feedback",
+        optSuggestion: "Sugestão",
+        optBug: "Problema / Bug",
+        optPraise: "Elogio",
+        labelFeedbackMessage: "Mensagem",
+        placeholderFeedbackMessage: "Descreva sua mensagem aqui...",
+        btnSendFeedback: "Enviar Feedback",
+        btnSendingFeedback: "Enviando...",
+        feedbackSuccess: "Feedback enviado com sucesso! ✓",
+        feedbackError: "Não foi possível enviar o feedback. Tente novamente mais tarde.",
+        btnCheckUpdates: "Verificar Atualizações",
+        btnCheckingUpdates: "Verificando...",
         tutorialLabel: "Onde me encontrar depois de salvar?",
         tutorialStep1Alt: "Passo 1: encontre o Mii na bandeja do sistema",
         tutorialStep2Alt: "Passo 2: abra o menu de comandos do Mii",
         tutorialDesc: "O aplicativo ficará ativo na bandeja do sistema.<br>Clique com o botão direito no ícone da bandeja para acessar os comandos.",
         btnSave: "Salvar e Ocultar",
         footerDevBy: "Desenvolvido por",
+        tabGeneral: "Geral & Perfil",
+        tabAI: "Personalidade & IA",
+        tabAlerts: "Alertas & Sistema",
+        tabTools: "Ferramentas & Feedback",
     },
     en: {
-        windowTitle: "MiiSideKick Settings",
+        windowTitle: "MiiSideKick — Settings (v1.6.0)",
         headerTitle: "Settings",
         headerSubtitle: "Customize your desktop companion.",
         sectionLanguage: "Language / Idioma",
@@ -140,6 +226,9 @@ const TRANSLATIONS: Record<string, Translations> = {
         labelUserName: "What should I call you?",
         placeholderUserName: "Reading from system...",
         placeholderUserNameError: "Connection error",
+        labelUserInterests: "Your interests and hobbies (optional)",
+        placeholderUserInterests: "E.g. anime, chess, coffee, coding...",
+        hintUserInterests: "Mii might occasionally bring up your interests in subtle analogies or casual conversation.",
         sectionPersonality: "Personality",
         personalityNames: {
             espelho: "Mirror",
@@ -184,12 +273,35 @@ const TRANSLATIONS: Record<string, Translations> = {
         },
         sectionStartup: "System Startup",
         checkAutostart: "Start with Windows",
+        sectionShortcuts: "Keyboard Shortcuts",
+        shortcutChatLabel: "Quick Chat with Mii",
+        shortcutChatDesc: "Opens the instant chat dialog from any application.",
+        sectionFeedback: "Send Feedback",
+        hintFeedback: "Have a suggestion, found a bug, or want to praise the project? Leave your message!",
+        labelFeedbackName: "Your Name / Nickname (optional)",
+        placeholderFeedbackName: "E.g. Alex",
+        labelFeedbackType: "Feedback Type",
+        optSuggestion: "Suggestion",
+        optBug: "Bug / Issue",
+        optPraise: "Praise",
+        labelFeedbackMessage: "Message",
+        placeholderFeedbackMessage: "Describe your message here...",
+        btnSendFeedback: "Send Feedback",
+        btnSendingFeedback: "Sending...",
+        feedbackSuccess: "Feedback sent successfully! ✓",
+        feedbackError: "Could not send feedback. Please try again later.",
+        btnCheckUpdates: "Check for Updates",
+        btnCheckingUpdates: "Checking...",
         tutorialLabel: "Where to find me after saving?",
         tutorialStep1Alt: "Step 1: find Mii in the system tray",
         tutorialStep2Alt: "Step 2: open Mii's command menu",
         tutorialDesc: "The application will stay active in the system tray.<br>Right-click the tray icon to access commands.",
         btnSave: "Save and Hide",
         footerDevBy: "Developed by",
+        tabGeneral: "General & Profile",
+        tabAI: "Personality & AI",
+        tabAlerts: "Alerts & System",
+        tabTools: "Tools & Feedback",
     },
 };
 
@@ -220,6 +332,16 @@ function selecionarIdioma(idioma: string) {
     const headerSubtitle = document.getElementById("headerSubtitle");
     if (headerSubtitle) headerSubtitle.textContent = t.headerSubtitle;
 
+    // Abas de Configuração
+    const tabBtnGeral = document.getElementById("tabBtnGeral");
+    if (tabBtnGeral) tabBtnGeral.textContent = t.tabGeneral;
+    const tabBtnIA = document.getElementById("tabBtnIA");
+    if (tabBtnIA) tabBtnIA.textContent = t.tabAI;
+    const tabBtnSistema = document.getElementById("tabBtnSistema");
+    if (tabBtnSistema) tabBtnSistema.textContent = t.tabAlerts;
+    const tabBtnFerramentas = document.getElementById("tabBtnFerramentas");
+    if (tabBtnFerramentas) tabBtnFerramentas.textContent = t.tabTools;
+
     // Seção Idioma
     const sectionLanguageTitle = document.getElementById("sectionLanguageTitle");
     if (sectionLanguageTitle) sectionLanguageTitle.textContent = t.sectionLanguage;
@@ -234,6 +356,10 @@ function selecionarIdioma(idioma: string) {
     if (userName && (!userName.value || userName.placeholder === TRANSLATIONS.pt.placeholderUserName || userName.placeholder === TRANSLATIONS.en.placeholderUserName)) {
         userName.placeholder = t.placeholderUserName;
     }
+
+    if (labelUserInterests) labelUserInterests.textContent = t.labelUserInterests;
+    if (userInterests) userInterests.placeholder = t.placeholderUserInterests;
+    if (hintUserInterests) hintUserInterests.textContent = t.hintUserInterests;
 
     // Seção Personalidade
     const sectionPersonalityTitle = document.getElementById("sectionPersonalityTitle");
@@ -323,6 +449,16 @@ function selecionarIdioma(idioma: string) {
     const spanAutostart = document.getElementById("spanAutostart");
     if (spanAutostart) spanAutostart.textContent = t.checkAutostart;
 
+    // Seção Atalhos
+    const sectionShortcutsTitle = document.getElementById("sectionShortcutsTitle");
+    if (sectionShortcutsTitle) sectionShortcutsTitle.textContent = t.sectionShortcuts;
+
+    const shortcutChatLabel = document.getElementById("shortcutChatLabel");
+    if (shortcutChatLabel) shortcutChatLabel.textContent = t.shortcutChatLabel;
+
+    const shortcutChatDesc = document.getElementById("shortcutChatDesc");
+    if (shortcutChatDesc) shortcutChatDesc.textContent = t.shortcutChatDesc;
+
     // Seção Tutorial
     const tutorialLabel = document.getElementById("tutorialLabel");
     if (tutorialLabel) tutorialLabel.textContent = t.tutorialLabel;
@@ -335,6 +471,44 @@ function selecionarIdioma(idioma: string) {
 
     const tutorialDesc = document.getElementById("tutorialDesc");
     if (tutorialDesc) tutorialDesc.innerHTML = t.tutorialDesc;
+
+    // Seção Feedback
+    const sectionFeedbackTitle = document.getElementById("sectionFeedbackTitle");
+    if (sectionFeedbackTitle) sectionFeedbackTitle.textContent = t.sectionFeedback;
+
+    const hintFeedback = document.getElementById("hintFeedback");
+    if (hintFeedback) hintFeedback.textContent = t.hintFeedback;
+
+    const labelFeedbackName = document.getElementById("labelFeedbackName");
+    if (labelFeedbackName) labelFeedbackName.textContent = t.labelFeedbackName;
+
+    if (feedbackName) feedbackName.placeholder = t.placeholderFeedbackName;
+
+    const labelFeedbackType = document.getElementById("labelFeedbackType");
+    if (labelFeedbackType) labelFeedbackType.textContent = t.labelFeedbackType;
+
+    const optSuggestion = document.getElementById("optSuggestion");
+    if (optSuggestion) optSuggestion.textContent = t.optSuggestion;
+
+    const optBug = document.getElementById("optBug");
+    if (optBug) optBug.textContent = t.optBug;
+
+    const optPraise = document.getElementById("optPraise");
+    if (optPraise) optPraise.textContent = t.optPraise;
+
+    const labelFeedbackMessage = document.getElementById("labelFeedbackMessage");
+    if (labelFeedbackMessage) labelFeedbackMessage.textContent = t.labelFeedbackMessage;
+
+    if (feedbackMessage) feedbackMessage.placeholder = t.placeholderFeedbackMessage;
+
+    if (btnEnviarFeedback && !btnEnviarFeedback.disabled) {
+        btnEnviarFeedback.textContent = t.btnSendFeedback;
+    }
+
+    // Botão de Atualização
+    if (labelCheckUpdates && (!btnCheckUpdates || !btnCheckUpdates.disabled)) {
+        labelCheckUpdates.textContent = t.btnCheckUpdates;
+    }
 
     // Botão Salvar
     if (btnSalvar) btnSalvar.textContent = t.btnSave;
@@ -495,8 +669,8 @@ if (inputLimite) {
 
 async function carregarDadosDoPC() {
     try {
-        // 1. Carrega as configurações salvas (nome, chave Gemini, personalidade, limite, gatilhos e idioma)
-        const config: any = await invoke("carregar_configuracoes");
+        // 1. Carrega as configurações salvas (nome, chave Gemini, personalidade, limite, gatilhos, gostos e idioma)
+        const config = await invoke<AppConfig>("carregar_configuracoes");
         if (config) {
             if (config.idioma) {
                 selecionarIdioma(config.idioma);
@@ -505,6 +679,7 @@ async function carregarDadosDoPC() {
             }
 
             if (userName) userName.value = config.user_name || "";
+            if (userInterests) userInterests.value = config.gostos_usuario || "";
             if (geminiApiKey) geminiApiKey.value = config.gemini_api_key || "";
             if (config.personalidade) {
                 selecionarPersonalidade(config.personalidade);
@@ -531,12 +706,12 @@ async function carregarDadosDoPC() {
 
         // Se ainda não tiver nome preenchido, busca do sistema
         if (userName && !userName.value) {
-            const info: any = await invoke("get_system_info");
+            const info = await invoke<UserInfo>("get_system_info");
             userName.value = info.name;
         }
 
         if (folderPath) {
-            const info: any = await invoke("get_system_info");
+            const info = await invoke<UserInfo>("get_system_info");
             folderPath.value = info.downloads;
         }
         
@@ -561,7 +736,156 @@ document.querySelectorAll('a[href^="http"], a.footer-link').forEach(link => {
     });
 });
 
+// Configura o envio assíncrono do formulário de feedback via Formspree
+if (feedbackForm) {
+    feedbackForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const t = TRANSLATIONS[idiomaAtual];
+        const nome = feedbackName?.value?.trim() || "";
+        const tipo = feedbackType?.value || "sugestao";
+        const mensagem = feedbackMessage?.value?.trim() || "";
+
+        if (!mensagem) return;
+
+        if (btnEnviarFeedback) {
+            btnEnviarFeedback.disabled = true;
+            btnEnviarFeedback.textContent = t.btnSendingFeedback;
+        }
+
+        if (feedbackStatus) {
+            feedbackStatus.style.display = "none";
+            feedbackStatus.className = "feedback-status";
+        }
+
+        try {
+            const response = await fetch(FORMSPREE_ENDPOINT, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Accept: "application/json",
+                },
+                body: JSON.stringify({
+                    name: nome,
+                    type: tipo,
+                    message: mensagem,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error(`Erro ${response.status}`);
+            }
+
+            if (feedbackMessage) feedbackMessage.value = "";
+            if (feedbackName) feedbackName.value = "";
+            if (feedbackStatus) {
+                feedbackStatus.textContent = t.feedbackSuccess;
+                feedbackStatus.className = "feedback-status sucesso";
+                feedbackStatus.style.display = "block";
+                setTimeout(() => {
+                    if (feedbackStatus) feedbackStatus.style.display = "none";
+                }, 5000);
+            }
+        } catch (err) {
+            console.error("Erro ao enviar feedback:", err);
+            if (feedbackStatus) {
+                feedbackStatus.textContent = t.feedbackError;
+                feedbackStatus.className = "feedback-status erro";
+                feedbackStatus.style.display = "block";
+            }
+        } finally {
+            if (btnEnviarFeedback) {
+                btnEnviarFeedback.disabled = false;
+                btnEnviarFeedback.textContent = t.btnSendFeedback;
+            }
+        }
+    });
+}
+
+// Configura a verificação manual de atualizações
+if (btnCheckUpdates) {
+    btnCheckUpdates.addEventListener("click", async () => {
+        const t = TRANSLATIONS[idiomaAtual];
+        btnCheckUpdates.disabled = true;
+        btnCheckUpdates.classList.add("checking");
+        if (labelCheckUpdates) labelCheckUpdates.textContent = t.btnCheckingUpdates;
+
+        if (updateStatusMsg) {
+            updateStatusMsg.style.display = "none";
+            updateStatusMsg.className = "update-status-msg";
+        }
+
+        try {
+            const result = await invoke<UpdateCheckResult>("verificar_atualizacoes_manual");
+            if (updateStatusMsg) {
+                updateStatusMsg.textContent = result.mensagem;
+                updateStatusMsg.className = result.tem_atualizacao
+                    ? "update-status-msg available"
+                    : "update-status-msg latest";
+                updateStatusMsg.style.display = "block";
+            }
+        } catch (err) {
+            console.error("Erro ao verificar atualizações:", err);
+            if (updateStatusMsg) {
+                updateStatusMsg.textContent = String(err);
+                updateStatusMsg.className = "update-status-msg error";
+                updateStatusMsg.style.display = "block";
+            }
+        } finally {
+            btnCheckUpdates.disabled = false;
+            btnCheckUpdates.classList.remove("checking");
+            if (labelCheckUpdates) labelCheckUpdates.textContent = t.btnCheckUpdates;
+        }
+    });
+}
+
+// Configura a navegação por abas horizontais (Windows 7 Property Sheet)
+function configurarAbas() {
+    const tabBtns = document.querySelectorAll<HTMLButtonElement>(".setup-tabs .tab-btn");
+    const tabPanes = document.querySelectorAll<HTMLElement>(".setup-tab-viewport .tab-pane");
+
+    tabBtns.forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const targetId = btn.getAttribute("data-tab");
+            if (!targetId) return;
+
+            tabBtns.forEach((b) => {
+                b.classList.remove("active");
+                b.setAttribute("aria-selected", "false");
+            });
+            tabPanes.forEach((p) => {
+                p.classList.remove("active");
+            });
+
+            btn.classList.add("active");
+            btn.setAttribute("aria-selected", "true");
+
+            const targetPane = document.getElementById(targetId);
+            if (targetPane) {
+                targetPane.classList.add("active");
+            }
+        });
+    });
+}
+
+// Configura os cards retráteis (Accordions), se presentes
+function configurarAccordions() {
+    const accordions = document.querySelectorAll<HTMLElement>(".accordion-section");
+    accordions.forEach((sec) => {
+        const toggleBtn = sec.querySelector<HTMLButtonElement>(".accordion-toggle");
+        const content = sec.querySelector<HTMLElement>(".accordion-body");
+        if (toggleBtn && content) {
+            toggleBtn.addEventListener("click", () => {
+                const isOpen = sec.classList.toggle("is-open");
+                toggleBtn.setAttribute("aria-expanded", String(isOpen));
+                content.style.display = isOpen ? "block" : "none";
+            });
+        }
+    });
+}
+
 // Executa imediatamente
+configurarAbas();
+configurarAccordions();
 carregarDadosDoPC();
 
 if (btnSalvar) {
@@ -581,6 +905,7 @@ if (btnSalvar) {
                     alerta_interacao_bem_estar: checkAlertaInteracaoBemEstar ? checkAlertaInteracaoBemEstar.checked : true,
                     frequencia_alertas: frequenciaAtual,
                     idioma: idiomaAtual,
+                    gostos_usuario: userInterests?.value?.trim() || "",
                 }
             });
         } catch (error) {

@@ -1,0 +1,29 @@
+===================================================================
+TRANSPARENCY, PRIVACY & SYSTEM USAGE POLICY - MIISIDEKICK
+===================================================================
+
+MiiSideKick is committed to complete transparency regarding how the app operates and utmost respect for your privacy. Please review the details below before completing the installation:
+
+1. ARTIFICIAL INTELLIGENCE (GOOGLE GEMINI API):
+   - MiiSideKick connects to the public Google Gemini API strictly to process user questions, generate curiosities, and simulate expressive personality reactions.
+   - Your personal API key is stored locally and securely on your own device.
+   - No conversations, API keys, or personal data are ever collected, tracked, or transmitted to any third-party servers by the developer.
+
+2. BACKGROUND OPERATION (SYSTEM TRAY):
+   - The application runs lightweight and continuously in the Windows System Tray, ready for instant interactions without cluttering your taskbar.
+   - The tray menu provides instant access to Setup, chat dialogs, reminders, file organization, and memory optimization at any time.
+
+3. SYSTEM RAM MONITORING & OPTIMIZATION:
+   - The assistant periodically checks operating system RAM utilization to detect high load conditions (e.g. usage above 85%).
+   - Memory optimization is never performed invasively: Mii always pops up a friendly alert asking for your explicit authorization before acting.
+
+4. GLOBAL KEYBOARD SHORTCUT:
+   - The application registers the global keyboard shortcut Ctrl + Shift + M.
+   - This shortcut enables you to summon the Mii chat box instantly from any open application or game, without having to click the tray icon.
+
+5. EXCLUSIVE LOCAL STORAGE IN APPDATA:
+   - All settings, conversation cache, and API preferences are saved exclusively in your local user directory:
+     %APPDATA%\MiiSideKick
+   - MiiSideKick has ZERO telemetry, ZERO behavioral tracking, and ZERO ads.
+
+By clicking "Next" or "Agree", you acknowledge and agree to how MiiSideKick operates on your system.

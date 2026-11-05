@@ -6,7 +6,9 @@
     "main",
     "popup",
     "timer",
-    "pergunta"
+    "pergunta",
+    "clipboard",
+    "historico"
   ],
   "permissions": [
     "core:default",

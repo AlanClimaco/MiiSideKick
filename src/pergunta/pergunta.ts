@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import type { AppConfig } from "../types";
 
 const inputPergunta = document.getElementById("inputPergunta") as HTMLInputElement;
 const btnEnviar = document.getElementById("btnEnviar");
@@ -6,7 +7,7 @@ const btnFechar = document.getElementById("btnFechar");
 
 async function aplicarIdioma() {
     try {
-        const config: any = await invoke("carregar_configuracoes");
+        const config = await invoke<AppConfig>("carregar_configuracoes");
         const isEn = config && config.idioma === "en";
         const titleEl = document.querySelector(".pergunta-title");
         if (titleEl) {
