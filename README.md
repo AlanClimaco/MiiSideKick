@@ -38,7 +38,7 @@ O MiiSideKick é uma aplicação nativa para Windows e Linux (Ubuntu) desenvolvi
     *  *Personalidade & IA*: Chave de API do Gemini (com botão de alternar visibilidade e link oficial), seletor de Personalidades e Tamanho da Resposta.
     *  *Alertas & Sistema*: Alertas Proativos (Manutenção e Bem-Estar), Frequência dos disparos e Inicialização com o Windows.
     *  *Ferramentas & Feedback*: Card dos Atalhos Globais (`Ctrl + Shift + M`) e Formulário de Feedback assíncrono (conectado ao Formspree).
-*  **Rodapé Fixo (Sticky Footer)**: Mantém sempre visíveis o botão *"Salvar e Ocultar"*, etiqueta de versão (`v1.6.0`), botão *"Verificar Atualizações"* com checagem assíncrona da release mais recente no GitHub e créditos do desenvolvedor.
+*  **Rodapé Fixo (Sticky Footer)**: Mantém sempre visíveis o botão *"Salvar e Ocultar"*, etiqueta de versão (`v1.6.1`), botão *"Verificar Atualizações"* com checagem assíncrona da release mais recente no GitHub e créditos do desenvolvedor.
 *  **Design Nostálgico**: Translucidez vítrea com efeito blur, reflexos luminosos suaves, cantos arredondados em relevo (*squircles*) e ícones vetoriais SVG limpos.
 *  **Ancoragem Inteligente**: Balão posicionado automaticamente no canto inferior direito da tela ativa.
 *  **Hover Inteligente**: Pausa automática do temporizador de fechamento da notificação enquanto o cursor estiver sobre o balão.

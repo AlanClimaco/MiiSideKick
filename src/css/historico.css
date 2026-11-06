@@ -202,6 +202,20 @@
     align-items: center;
     gap: 4px;
     cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+.item-link svg {
+    width: 11px;
+    height: 11px;
+    flex-shrink: 0;
+    stroke: currentColor;
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.item-link:hover {
+    color: #0d4b85;
 }
 
 .item-bottom-row {
@@ -217,7 +231,7 @@
 .btn-item-action {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
+    gap: 5px;
     font-size: 10.5px;
     font-weight: 600;
     padding: 3px 8px;
@@ -227,6 +241,19 @@
     color: #254b70;
     cursor: pointer;
     transition: all 0.12s ease;
+    user-select: none;
+}
+
+.btn-item-action svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+    stroke: currentColor;
+    display: block;
+}
+
+.btn-item-action span {
+    line-height: 1;
 }
 
 .btn-item-action:hover {
