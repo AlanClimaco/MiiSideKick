@@ -2,6 +2,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { enable, disable, isEnabled } from '@tauri-apps/plugin-autostart';
 import { openUrl } from '@tauri-apps/plugin-opener';
 import type { AppConfig, UserInfo } from "./types";
+import { inicializarArvoreOrganizador, atualizarIdiomaArvore } from "./organizador/tree";
 
 const FORMSPREE_ENDPOINT = "https://formspree.io/f/xvkkyvbv";
 
@@ -26,6 +27,12 @@ const checkAlertaManutencao = document.getElementById("checkAlertaManutencao") a
 const checkAlertaInteracaoBemEstar = document.getElementById("checkAlertaInteracaoBemEstar") as HTMLInputElement;
 const frequencyButtons = document.querySelectorAll<HTMLButtonElement>(".frequency-btn");
 const frequencyHint = document.getElementById("frequencyHint");
+
+// Controles do Gadget de Desktop
+const checkGadgetAtivo = document.getElementById("checkGadgetAtivo") as HTMLInputElement | null;
+const btnRedefinirPosicaoGadget = document.getElementById("btnRedefinirPosicaoGadget") as HTMLButtonElement | null;
+const sectionGadgetTitle = document.getElementById("sectionGadgetTitle");
+const spanGadgetAtivo = document.getElementById("spanGadgetAtivo");
 
 // Elementos de Atalhos e Feedback
 const keyModifier = document.getElementById("keyModifier");
@@ -59,6 +66,7 @@ if (keyModifier) {
 let idiomaAtual = "pt";
 let personalidadeAtual = "espelho";
 let frequenciaAtual = "equilibrado";
+let avatarModoAtual = "classico";
 
 interface Translations {
     windowTitle: string;
@@ -99,6 +107,9 @@ interface Translations {
     frequencyHints: Record<string, string>;
     sectionStartup: string;
     checkAutostart: string;
+    sectionGadget: string;
+    checkGadget: string;
+    btnResetGadget: string;
     sectionShortcuts: string;
     shortcutChatLabel: string;
     shortcutChatDesc: string;
@@ -187,6 +198,9 @@ const TRANSLATIONS: Record<string, Translations> = {
         },
         sectionStartup: "Inicialização do Sistema",
         checkAutostart: "Iniciar junto com o Windows",
+        sectionGadget: "Gadget de Área de Trabalho",
+        checkGadget: "Ativar Gadget na Área de Trabalho (monitor translúcido de CPU/RAM com atalhos)",
+        btnResetGadget: "Redefinir Posição do Gadget",
         sectionShortcuts: "Atalhos do Teclado",
         shortcutChatLabel: "Conversa Rápida com o Mii",
         shortcutChatDesc: "Abre a caixa de diálogo instantânea a partir de qualquer aplicativo.",
@@ -202,7 +216,7 @@ const TRANSLATIONS: Record<string, Translations> = {
         placeholderFeedbackMessage: "Descreva sua mensagem aqui...",
         btnSendFeedback: "Enviar Feedback",
         btnSendingFeedback: "Enviando...",
-        feedbackSuccess: "Feedback enviado com sucesso! ✓",
+        feedbackSuccess: "Feedback enviado com sucesso!",
         feedbackError: "Não foi possível enviar o feedback. Tente novamente mais tarde.",
         btnCheckUpdates: "Verificar Atualizações",
         btnCheckingUpdates: "Verificando...",
@@ -273,6 +287,9 @@ const TRANSLATIONS: Record<string, Translations> = {
         },
         sectionStartup: "System Startup",
         checkAutostart: "Start with Windows",
+        sectionGadget: "Desktop Gadget",
+        checkGadget: "Enable Desktop Gadget (translucent CPU/RAM monitor with quick actions)",
+        btnResetGadget: "Reset Gadget Position",
         sectionShortcuts: "Keyboard Shortcuts",
         shortcutChatLabel: "Quick Chat with Mii",
         shortcutChatDesc: "Opens the instant chat dialog from any application.",
@@ -288,7 +305,7 @@ const TRANSLATIONS: Record<string, Translations> = {
         placeholderFeedbackMessage: "Describe your message here...",
         btnSendFeedback: "Send Feedback",
         btnSendingFeedback: "Sending...",
-        feedbackSuccess: "Feedback sent successfully! ✓",
+        feedbackSuccess: "Feedback sent successfully!",
         feedbackError: "Could not send feedback. Please try again later.",
         btnCheckUpdates: "Check for Updates",
         btnCheckingUpdates: "Checking...",
@@ -449,6 +466,11 @@ function selecionarIdioma(idioma: string) {
     const spanAutostart = document.getElementById("spanAutostart");
     if (spanAutostart) spanAutostart.textContent = t.checkAutostart;
 
+    // Seção Gadget
+    if (sectionGadgetTitle) sectionGadgetTitle.textContent = t.sectionGadget;
+    if (spanGadgetAtivo) spanGadgetAtivo.textContent = t.checkGadget;
+    if (btnRedefinirPosicaoGadget) btnRedefinirPosicaoGadget.textContent = t.btnResetGadget;
+
     // Seção Atalhos
     const sectionShortcutsTitle = document.getElementById("sectionShortcutsTitle");
     if (sectionShortcutsTitle) sectionShortcutsTitle.textContent = t.sectionShortcuts;
@@ -509,6 +531,49 @@ function selecionarIdioma(idioma: string) {
     if (labelCheckUpdates && (!btnCheckUpdates || !btnCheckUpdates.disabled)) {
         labelCheckUpdates.textContent = t.btnCheckUpdates;
     }
+
+    // Seção Avatar
+    const sectionAvatarTitle = document.getElementById("sectionAvatarTitle");
+    if (sectionAvatarTitle) {
+        sectionAvatarTitle.textContent = idiomaAtual === "en" ? "Mascot Appearance" : "Aparência do Mascote";
+    }
+    const btnAvatarClassico = document.getElementById("btnAvatarClassico");
+    if (btnAvatarClassico) btnAvatarClassico.textContent = idiomaAtual === "en" ? "Classic" : "Clássico";
+    const btnAvatarNostalgico = document.getElementById("btnAvatarNostalgico");
+    if (btnAvatarNostalgico) btnAvatarNostalgico.textContent = idiomaAtual === "en" ? "Nostalgic" : "Nostálgico";
+    const btnAvatarCustom = document.getElementById("btnAvatarCustom");
+    if (btnAvatarCustom) btnAvatarCustom.textContent = idiomaAtual === "en" ? "Custom" : "Personalizado";
+    const hintCustomAvatar = document.getElementById("hintCustomAvatar");
+    if (hintCustomAvatar) {
+        hintCustomAvatar.textContent = idiomaAtual === "en"
+            ? "Add your own character sprites for all 8 emotions in the local folder. If you place only 1 image, it will be used for all reactions."
+            : "Adicione suas próprias imagens com as 8 emoções na pasta local. Caso adicione apenas 1 imagem, ela será usada para todas as reações.";
+    }
+    const btnAbrirPasta = document.getElementById("btnAbrirPastaAvatar");
+    if (btnAbrirPasta) btnAbrirPasta.textContent = idiomaAtual === "en" ? "Open Avatar Folder" : "Abrir Pasta do Avatar";
+    const btnRecarregar = document.getElementById("btnRecarregarAvatar");
+    if (btnRecarregar) btnRecarregar.textContent = idiomaAtual === "en" ? "Check" : "Verificar";
+
+    // Seção Organizador de Arquivos
+    const sectionOrganizadorTitle = document.getElementById("sectionOrganizadorTitle");
+    if (sectionOrganizadorTitle) {
+        sectionOrganizadorTitle.textContent = idiomaAtual === "en" ? "File Organizer" : "Organizador de Arquivos";
+    }
+    const hintOrganizador = document.getElementById("hintOrganizador");
+    if (hintOrganizador) {
+        hintOrganizador.textContent = idiomaAtual === "en"
+            ? "Customize where each file type is moved when organizing Downloads."
+            : "Personalize para onde cada tipo de arquivo é movido ao organizar a pasta Downloads.";
+    }
+    const btnRestaurarRegras = document.getElementById("btnRestaurarRegrasOrganizador");
+    if (btnRestaurarRegras) {
+        btnRestaurarRegras.textContent = idiomaAtual === "en" ? "Restore Defaults" : "Restaurar Padrões";
+    }
+    const btnSalvarRegras = document.getElementById("btnSalvarRegrasOrganizador");
+    if (btnSalvarRegras) {
+        btnSalvarRegras.textContent = idiomaAtual === "en" ? "Save Rules" : "Salvar Regras";
+    }
+    atualizarIdiomaArvore(idiomaAtual);
 
     // Botão Salvar
     if (btnSalvar) btnSalvar.textContent = t.btnSave;
@@ -596,6 +661,84 @@ frequencyButtons.forEach((btn) => {
         const freq = btn.getAttribute("data-frequency") || "equilibrado";
         selecionarFrequencia(freq);
     });
+});
+
+// Controles de Modo de Avatar
+interface StatusAvatarResult {
+    modo: string;
+    imagens_encontradas: number;
+    total_esperado: number;
+    usa_fallback_estatico: boolean;
+    pasta_caminho: string;
+}
+
+const avatarButtons = document.querySelectorAll<HTMLButtonElement>(".avatar-mode-btn");
+const customAvatarContainer = document.getElementById("customAvatarContainer");
+const btnAbrirPastaAvatar = document.getElementById("btnAbrirPastaAvatar");
+const btnRecarregarAvatar = document.getElementById("btnRecarregarAvatar");
+const statusAvatarMsg = document.getElementById("statusAvatarMsg");
+
+async function atualizarStatusAvatarVisual() {
+    if (!statusAvatarMsg) return;
+    try {
+        const st = await invoke<StatusAvatarResult>("obter_status_avatar_customizado");
+        const isEn = idiomaAtual === "en";
+        statusAvatarMsg.style.display = "block";
+        if (st.imagens_encontradas === 0) {
+            statusAvatarMsg.className = "aero-status-msg aero-status-pending";
+            statusAvatarMsg.textContent = isEn
+                ? "Folder is empty. Please place your images."
+                : "Pasta vazia. Coloque suas imagens na pasta.";
+        } else if (st.usa_fallback_estatico) {
+            statusAvatarMsg.className = "aero-status-msg aero-status-success";
+            statusAvatarMsg.textContent = isEn
+                ? `${st.imagens_encontradas} image(s) found (static fallback active).`
+                : `${st.imagens_encontradas} imagem(ns) encontrada(s) (modo estático ativo).`;
+        } else {
+            statusAvatarMsg.className = "aero-status-msg aero-status-success";
+            statusAvatarMsg.textContent = isEn
+                ? "All 8 emotions found! Full set ready."
+                : "Todas as 8 emoções encontradas! Kit completo pronto.";
+        }
+    } catch {}
+}
+
+function selecionarModoAvatar(modo: string) {
+    avatarModoAtual = modo || "classico";
+    avatarButtons.forEach((btn) => {
+        if (btn.getAttribute("data-avatar-mode") === avatarModoAtual) {
+            btn.classList.add("active");
+        } else {
+            btn.classList.remove("active");
+        }
+    });
+
+    if (customAvatarContainer) {
+        customAvatarContainer.style.display = avatarModoAtual === "custom" ? "block" : "none";
+    }
+
+    if (avatarModoAtual === "custom") {
+        atualizarStatusAvatarVisual();
+    }
+}
+
+avatarButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+        const m = btn.getAttribute("data-avatar-mode") || "classico";
+        selecionarModoAvatar(m);
+    });
+});
+
+btnAbrirPastaAvatar?.addEventListener("click", async () => {
+    try {
+        await invoke("abrir_pasta_avatar_customizado");
+    } catch (e) {
+        console.error("Erro ao abrir pasta:", e);
+    }
+});
+
+btnRecarregarAvatar?.addEventListener("click", () => {
+    atualizarStatusAvatarVisual();
 });
 
 // Ícones SVG para o botão de visualização da chave de API
@@ -700,6 +843,14 @@ async function carregarDadosDoPC() {
             if (config.frequencia_alertas) {
                 selecionarFrequencia(config.frequencia_alertas);
             }
+            if (config.avatar_modo) {
+                selecionarModoAvatar(config.avatar_modo);
+            } else {
+                selecionarModoAvatar("classico");
+            }
+            if (checkGadgetAtivo) {
+                checkGadgetAtivo.checked = config.gadget_ativo === true;
+            }
         } else {
             selecionarIdioma("pt");
         }
@@ -718,6 +869,9 @@ async function carregarDadosDoPC() {
         // 2. Verifica se o Autostart já está ativado no sistema e marca a caixinha
         const autostartAtivo = await isEnabled();
         if (checkAutostart) checkAutostart.checked = autostartAtivo;
+
+        // 3. Inicializa árvore de regras do organizador de arquivos
+        await inicializarArvoreOrganizador(idiomaAtual);
 
     } catch (e) {
         console.error("Erro ao carregar dados:", e);
@@ -906,6 +1060,8 @@ if (btnSalvar) {
                     frequencia_alertas: frequenciaAtual,
                     idioma: idiomaAtual,
                     gostos_usuario: userInterests?.value?.trim() || "",
+                    avatar_modo: avatarModoAtual,
+                    gadget_ativo: checkGadgetAtivo ? checkGadgetAtivo.checked : false,
                 }
             });
         } catch (error) {
@@ -925,5 +1081,26 @@ if (btnSalvar) {
 
         // Pede para o Rust esconder a janela e ir para a bandeja
         await invoke("esconder_janela");
+    });
+}
+
+// Ações do Gadget de Desktop
+if (checkGadgetAtivo) {
+    checkGadgetAtivo.addEventListener("change", async () => {
+        try {
+            await invoke("alternar_gadget", { ativo: checkGadgetAtivo.checked });
+        } catch (e) {
+            console.error("Erro ao alternar gadget:", e);
+        }
+    });
+}
+
+if (btnRedefinirPosicaoGadget) {
+    btnRedefinirPosicaoGadget.addEventListener("click", async () => {
+        try {
+            await invoke("redefinir_posicao_gadget");
+        } catch (e) {
+            console.error("Erro ao redefinir posição do gadget:", e);
+        }
     });
 }

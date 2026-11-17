@@ -30,17 +30,54 @@ const mapaAssetsReacoes: Record<string, string> = {
     sucesso: miiFeliz,
 };
 
+let mapaCustomAvatar: Record<string, string> = {};
+
+async function carregarConfigAvatar() {
+    try {
+        const config = await invoke<AppConfig>("carregar_configuracoes");
+        if (config && config.avatar_modo === "custom") {
+            const mapa = await invoke<Record<string, string>>("obter_mapa_avatares", { modo: "custom" });
+            if (mapa) {
+                mapaCustomAvatar = mapa;
+            }
+        } else {
+            mapaCustomAvatar = {};
+        }
+    } catch (e) {
+        console.warn("Falha ao carregar mapa de avatar customizado:", e);
+    }
+}
+
 /**
- * Resolve dinamicamente a imagem da reação apontando para `/src/assets/reacoes/mii-{reacao}.png`
- * e utilizando o asset empacotado pelo Vite.
+ * Resolve dinamicamente a imagem da reação apontando para avatar customizado ou asset empacotado
  */
 function obterImagemReacao(reacao: string): string {
     const nomeLimpo = (reacao || "normal").toLowerCase().trim();
+
+    // 1. Checa se há imagem personalizada carregada para a emoção
+    if (mapaCustomAvatar[nomeLimpo] && mapaCustomAvatar[nomeLimpo].length > 0) {
+        return mapaCustomAvatar[nomeLimpo];
+    }
+    // Aliases para custom avatar
+    if ((nomeLimpo === "bravo" || nomeLimpo === "irritado") && mapaCustomAvatar["raiva"]) {
+        return mapaCustomAvatar["raiva"];
+    }
+    if (nomeLimpo === "erro" && mapaCustomAvatar["frustrado"]) {
+        return mapaCustomAvatar["frustrado"];
+    }
+    if ((nomeLimpo === "tranquilo" || nomeLimpo === "sucesso") && mapaCustomAvatar["feliz"]) {
+        return mapaCustomAvatar["feliz"];
+    }
+    // Curinga da pasta custom se presente
+    if (mapaCustomAvatar["normal"] && mapaCustomAvatar["normal"].length > 0) {
+        return mapaCustomAvatar["normal"];
+    }
+
+    // 2. Fallback para os assets embutidos empacotados
     if (mapaAssetsReacoes[nomeLimpo]) {
         return mapaAssetsReacoes[nomeLimpo];
     }
-    // Aponta dinamicamente para o caminho da pasta de assets
-    return `/src/assets/reacoes/mii-${nomeLimpo}.png`;
+    return miiNormal;
 }
 
 let hideTimeout: number;
@@ -250,6 +287,7 @@ if (btnResponder) {
 
 async function carregarNotificacao() {
     try {
+        await carregarConfigAvatar();
         const dados = await invoke<PayloadNotificacao | null>("pegar_dados_notificacao");
         if (dados && dados.texto && window.atualizarInterface) {
             window.atualizarInterface(dados);
@@ -258,5 +296,9 @@ async function carregarNotificacao() {
         console.error("Erro ao carregar dados iniciais:", e);
     }
 }
+
+window.addEventListener("focus", () => {
+    carregarConfigAvatar();
+});
 
 carregarNotificacao();

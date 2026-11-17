@@ -407,14 +407,42 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
         loop {
             std::thread::sleep(Duration::from_secs(1));
 
-            // Esvazia fila de notificações se não estiver em tela cheia nem em período de tolerância
-            if !crate::sistema::atualizar_e_checar_foco() && crate::sistema::tamanho_fila() > 0 {
-                if let Some(pendente) = crate::sistema::desenfileirar_notificacao() {
+            // Esvazia fila com descarte inteligente (purge/debounce) e contexto de janela pós-fullscreen
+            let foco_ou_tolerancia = crate::sistema::atualizar_e_checar_foco();
+            if !foco_ou_tolerancia {
+                if crate::sistema::tamanho_fila() > 0 {
+                    let mut sys_local = sysinfo::System::new();
+                    sys_local.refresh_memory();
+                    let total_ram_loc = sys_local.total_memory();
+                    let used_ram_loc = sys_local.used_memory();
+                    let pct_ram_loc = if total_ram_loc > 0 {
+                        (used_ram_loc as f64 / total_ram_loc as f64) * 100.0
+                    } else {
+                        0.0
+                    };
+
+                    if let Some(prioritaria) =
+                        crate::sistema::purgar_e_obter_proxima_notificacao(pct_ram_loc)
+                    {
+                        eprintln!(
+                            "[Sistema]: Entregando notificação prioritária pós-tela cheia: {}",
+                            prioritaria.texto
+                        );
+                        crate::comandos::exibir_janela_notificacao(&app, &prioritaria);
+                    }
+                }
+
+                // Comentário contextual pós-jogo / processo longo (~50% de chance)
+                let cfg_quick = comandos::carregar_configuracoes();
+                let is_en_quick = cfg_quick.idioma == "en";
+                if let Some(comentario) =
+                    crate::sistema::consumir_comentario_contextual_pos_jogo(is_en_quick)
+                {
                     eprintln!(
-                        "[Sistema]: Descarregando notificação pendente pós-tela cheia: {}",
-                        pendente.texto
+                        "[Sistema]: Disparando comentário contextual pós-jogo: {}",
+                        comentario.texto
                     );
-                    crate::comandos::exibir_janela_notificacao(&app, &pendente);
+                    crate::comandos::exibir_janela_notificacao(&app, &comentario);
                 }
             }
 

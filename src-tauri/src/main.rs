@@ -4,6 +4,9 @@ mod comandos;
 mod gatilhos;
 mod sistema;
 mod clipboard;
+mod organizador;
+mod avatar;
+mod captura;
 
 use tauri::{
     menu::{Menu, MenuItem},
@@ -18,14 +21,14 @@ pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>
     let show_i = MenuItem::with_id(
         app,
         "show",
-        if is_en { "⚙️ Open Setup" } else { "⚙️ Abrir Setup" },
+        if is_en { "Open Setup" } else { "Abrir Setup" },
         true,
         None::<&str>,
     )?;
     let pergunta_i = MenuItem::with_id(
         app,
         "pergunta",
-        if is_en { "💬 Chat with Mii" } else { "💬 Conversar com o Mii" },
+        if is_en { "Chat with Mii" } else { "Conversar com o Mii" },
         true,
         None::<&str>,
     )?;
@@ -33,7 +36,7 @@ pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>
     let historico_i = MenuItem::with_id(
         app,
         "historico",
-        if is_en { "💡 Recent AI Messages" } else { "💡 Últimas Mensagens da IA" },
+        if is_en { "Recent AI Messages" } else { "Últimas Mensagens da IA" },
         true,
         None::<&str>,
     )?;
@@ -41,42 +44,42 @@ pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>
     let clipboard_i = MenuItem::with_id(
         app,
         "clipboard",
-        if is_en { "📋 Clipboard History" } else { "📋 Histórico de Copiar" },
+        if is_en { "Clipboard History" } else { "Histórico de Copiar" },
         true,
         None::<&str>,
     )?;
     let timer_i = MenuItem::with_id(
         app,
         "timer",
-        if is_en { "⏱️ New Reminder" } else { "⏱️ Novo Lembrete" },
+        if is_en { "New Reminder" } else { "Novo Lembrete" },
         true,
         None::<&str>,
     )?;
     let organiza_i = MenuItem::with_id(
         app,
         "organiza",
-        if is_en { "📁 Organize Files" } else { "📁 Organizar Arquivos" },
+        if is_en { "Organize Files" } else { "Organizar Arquivos" },
         true,
         None::<&str>,
     )?;
     let faxina_i = MenuItem::with_id(
         app,
         "faxina",
-        if is_en { "🧹 Clean Junk Files" } else { "🧹 Limpar Lixo do PC" },
+        if is_en { "Clean Junk Files" } else { "Limpar Lixo do PC" },
         true,
         None::<&str>,
     )?;
     let otimizar_ram_i = MenuItem::with_id(
         app,
         "otimizar_ram",
-        if is_en { "⚡ Optimize RAM" } else { "⚡ Otimizar RAM" },
+        if is_en { "Optimize RAM" } else { "Otimizar RAM" },
         true,
         None::<&str>,
     )?;
     let quit_i = MenuItem::with_id(
         app,
         "quit",
-        if is_en { "❌ Quit" } else { "❌ Sair" },
+        if is_en { "Quit" } else { "Sair" },
         true,
         None::<&str>,
     )?;
@@ -160,9 +163,24 @@ fn main() {
             comandos::reexibir_notificacao_ia,
             comandos::abrir_historico,
             comandos::esconder_historico,
-            comandos::verificar_atualizacoes_manual
+            comandos::verificar_atualizacoes_manual,
+            organizador::obter_regras_organizador,
+            organizador::salvar_regras_organizador,
+            organizador::restaurar_regras_padrao,
+            avatar::obter_mapa_avatares,
+            avatar::obter_status_avatar_customizado,
+            avatar::abrir_pasta_avatar_customizado,
+            comandos::analisar_tela_com_ia,
+            comandos::copiar_detalhes_ia,
+            comandos::obter_telemetria_rapida,
+            comandos::salvar_posicao_gadget,
+            comandos::alternar_gadget,
+            comandos::redefinir_posicao_gadget
         ])
         .setup(|app| {
+            // Inicializa pasta e README de avatar customizado
+            avatar::inicializar_diretorio_avatar();
+
             // Inicializa o motor de gatilhos proativos e checagem de updates
             gatilhos::iniciar_motor_proativo(app.handle().clone());
 
@@ -332,6 +350,42 @@ fn main() {
                 let x = size.width.saturating_sub(window_size.width + 20);
                 let y = size.height.saturating_sub(window_size.height + 60);
                 let _ = historico_window.set_position(tauri::PhysicalPosition::new(x, y));
+            }
+
+            // JANELA GADGET (DESKTOP WIDGET TRANSLÚCIDO ESTILO WINDOWS 7)
+
+            #[cfg(debug_assertions)]
+            let gadget_url = WebviewUrl::External(
+                tauri::Url::parse("http://localhost:1420/gadget.html").unwrap(),
+            );
+            #[cfg(not(debug_assertions))]
+            let gadget_url = WebviewUrl::App("gadget.html".into());
+
+            let cfg_gadget = comandos::carregar_configuracoes();
+
+            let gadget_window = WebviewWindowBuilder::new(
+                app, "gadget",
+                gadget_url,
+            )
+            .inner_size(220.0, 180.0)
+            .decorations(false)
+            .transparent(true)
+            .resizable(false)
+            .shadow(false)
+            .skip_taskbar(true)
+            .visible(cfg_gadget.gadget_ativo)
+            .build()?;
+
+            if let (Some(gx), Some(gy)) = (cfg_gadget.gadget_x, cfg_gadget.gadget_y) {
+                let _ = gadget_window.set_position(tauri::PhysicalPosition::new(gx, gy));
+            } else if let Ok(Some(monitor)) = gadget_window.primary_monitor() {
+                let size = monitor.size();
+                let window_size = gadget_window
+                    .outer_size()
+                    .unwrap_or(tauri::PhysicalSize::new(220, 180));
+                let x = size.width.saturating_sub(window_size.width + 30);
+                let y = 60;
+                let _ = gadget_window.set_position(tauri::PhysicalPosition::new(x, y));
             }
 
             // CONFIGURAÇÃO DA BANDEJA DO SISTEMA

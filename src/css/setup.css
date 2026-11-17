@@ -293,6 +293,7 @@
 .length-btn,
 .frequency-btn,
 .lang-btn,
+.avatar-mode-btn,
 .btn-toggle-key {
     padding: 8px 10px;
     background: linear-gradient(to bottom, #ffffff 0%, #e2f0fc 50%, #cce5f8 51%, #dff0fd 100%);
@@ -314,6 +315,7 @@
 .length-btn:hover,
 .frequency-btn:hover,
 .lang-btn:hover,
+.avatar-mode-btn:hover,
 .btn-toggle-key:hover {
     background: linear-gradient(to bottom, #ffffff 0%, #d7f1ff 50%, #b6e0fa 51%, #d7f2ff 100%);
     border-color: #559bd0;
@@ -323,7 +325,8 @@
 .personality-btn.active,
 .length-btn.active,
 .frequency-btn.active,
-.lang-btn.active {
+.lang-btn.active,
+.avatar-mode-btn.active {
     background: linear-gradient(to bottom, #dcf0ff 0%, #9ed4fb 50%, #76beee 51%, #a4daf9 100%);
     border-color: #2c7eb9;
     color: #12364e;
@@ -989,4 +992,189 @@
 @media (prefers-reduced-motion: reduce) {
     .setup-body *,
     .setup-body *::before { transition: none; }
+}
+
+/* ==========================================================================
+   ÁRVORE DE REGRAS DO ORGANIZADOR DE ARQUIVOS (FRUTIGER AERO)
+   ========================================================================== */
+.organizador-tree-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.organizador-tree-actions {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.organizador-tree-scroll {
+    max-height: 260px;
+    overflow-y: auto;
+    padding-right: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.aero-tree-node {
+    background: rgba(255, 255, 255, 0.55);
+    border: 1px solid rgba(130, 185, 215, 0.45);
+    border-radius: 8px;
+    padding: 8px 10px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 4px rgba(0, 0, 0, 0.04);
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.aero-tree-node:hover {
+    background: rgba(255, 255, 255, 0.75);
+    border-color: rgba(90, 165, 205, 0.65);
+}
+
+.aero-tree-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+.aero-folder-icon {
+    display: inline-flex;
+    color: #f39c12;
+    filter: drop-shadow(0 1px 1px rgba(0,0,0,0.15));
+}
+
+.aero-folder-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: #174258;
+}
+
+.aero-badge-count {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: linear-gradient(to bottom, #f2fbfe, #d4edf6);
+    border: 1px solid #9dcbe0;
+    color: #245873;
+}
+
+.aero-tree-body {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.aero-chips-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+
+.aero-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: linear-gradient(to bottom, #ffffff 0%, #e6f6fc 50%, #d0eff9 100%);
+    border: 1px solid #84bad5;
+    border-radius: 12px;
+    padding: 2px 8px;
+    font-size: 11.5px;
+    font-weight: 600;
+    color: #1a4961;
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(0, 0, 0, 0.06);
+    user-select: none;
+}
+
+.btn-remove-chip {
+    background: none;
+    border: none;
+    color: #e74c3c;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0 1px;
+    opacity: 0.7;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.btn-remove-chip:hover {
+    opacity: 1;
+    transform: scale(1.2);
+}
+
+.aero-add-chip-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 2px;
+}
+
+.aero-input-chip {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid #94c3dc;
+    border-radius: 4px;
+    padding: 3px 6px;
+    font-size: 11.5px;
+    color: #174258;
+    max-width: 130px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+.aero-input-chip:focus {
+    outline: 2px solid var(--aero-focus);
+    background: #ffffff;
+}
+
+.btn-add-chip {
+    background: linear-gradient(to bottom, #ffffff, #d2f4fc);
+    border: 1px solid #7eb8d7;
+    border-radius: 4px;
+    width: 22px;
+    height: 22px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 13px;
+    color: #164f6c;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 #ffffff;
+}
+
+.btn-add-chip:hover {
+    background: linear-gradient(to bottom, #ffffff, #bceefc);
+}
+
+.aero-status-msg {
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+    text-align: center;
+}
+
+.aero-status-success {
+    background: #eafaf1;
+    color: #27ae60;
+    border: 1px solid #a9dfbf;
+}
+
+.aero-status-pending {
+    background: #fef9e7;
+    color: #d4ac0d;
+    border: 1px solid #f9e79f;
+}
+
+.aero-status-error {
+    background: #fdedec;
+    color: #c0392b;
+    border: 1px solid #f5b7b1;
 }

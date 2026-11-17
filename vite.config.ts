@@ -32,6 +32,7 @@ export default defineConfig(async () => ({
         pergunta: "pergunta.html",
         clipboard: "clipboard.html",
         historico: "historico.html",
+        gadget: "gadget.html",
       },
     },
   },

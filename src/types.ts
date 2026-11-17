@@ -8,6 +8,30 @@ export interface AppConfig {
     frequencia_alertas: string;
     idioma: string;
     gostos_usuario?: string;
+    gadget_ativo?: boolean;
+    gadget_x?: number;
+    gadget_y?: number;
+    avatar_modo?: string; // "classico", "nostalgico", "custom"
+}
+
+export interface RegraPasta {
+    id: string;
+    nome: string;
+    destino_chave: string;
+    subpasta?: string | null;
+    extensoes: string[];
+}
+
+export interface RegrasOrganizador {
+    versao: number;
+    regras: RegraPasta[];
+}
+
+export interface TelemetriaRapida {
+    cpu_uso: number;
+    ram_uso_pct: number;
+    ram_usada_mb: number;
+    ram_total_mb: number;
 }
 
 export interface UserInfo {

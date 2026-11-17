@@ -42,10 +42,10 @@
             <div class="section-title" id="sectionLanguageTitle">Idioma / Language</div>
             <div class="language-presets" id="languageContainer">
               <button type="button" class="lang-btn active" data-lang="pt">
-                Português 🇧🇷
+                Português (BR)
               </button>
               <button type="button" class="lang-btn" data-lang="en">
-                English 🇺🇸
+                English (US)
               </button>
             </div>
           </section>
@@ -61,6 +61,36 @@
               <label for="userInterests" id="labelUserInterests">Seus interesses e gostos (opcional)</label>
               <input type="text" id="userInterests" placeholder="Ex: anime, xadrez, café, programação...">
               <small class="input-hint" id="hintUserInterests" style="display: block; margin-top: 4px; font-size: 0.78rem; opacity: 0.85;">O Mii pode usar seus gostos de vez em quando para fazer analogias ou puxar assunto de forma sutil.</small>
+            </div>
+          </section>
+
+          <!-- Avatar & Visual -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionAvatarTitle">Aparência do Mascote</div>
+            <div class="personality-presets" style="margin-bottom: 8px;">
+              <button type="button" class="avatar-mode-btn active" data-avatar-mode="classico" id="btnAvatarClassico">
+                Clássico
+              </button>
+              <button type="button" class="avatar-mode-btn" data-avatar-mode="nostalgico" id="btnAvatarNostalgico">
+                Nostálgico
+              </button>
+              <button type="button" class="avatar-mode-btn" data-avatar-mode="custom" id="btnAvatarCustom">
+                Personalizado
+              </button>
+            </div>
+            <div id="customAvatarContainer" style="display: none; margin-top: 8px;">
+              <p class="input-hint" id="hintCustomAvatar" style="margin-bottom: 8px;">
+                Adicione suas próprias imagens com as 8 emoções na pasta local. Caso adicione apenas 1 imagem, ela será usada para todas as reações.
+              </p>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn-secondary" id="btnAbrirPastaAvatar" style="font-size: 11.5px; padding: 4px 10px;">
+                  Abrir Pasta do Avatar
+                </button>
+                <button type="button" class="btn-secondary" id="btnRecarregarAvatar" style="font-size: 11.5px; padding: 4px 8px;" title="Verificar imagens">
+                  Verificar
+                </button>
+              </div>
+              <div id="statusAvatarMsg" class="aero-status-msg" style="display: none; margin-top: 6px;"></div>
             </div>
           </section>
 
@@ -186,10 +216,46 @@
               <span id="spanAutostart">Iniciar junto com o Windows</span>
             </label>
           </section>
+
+          <!-- Gadget de Área de Trabalho (Estilo Windows 7) -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionGadgetTitle">Gadget de Área de Trabalho</div>
+            <label class="checkbox-label" for="checkGadgetAtivo">
+              <input type="checkbox" id="checkGadgetAtivo" class="checkbox-input">
+              <span id="spanGadgetAtivo">Ativar Gadget na Área de Trabalho (monitor translúcido de CPU/RAM com atalhos)</span>
+            </label>
+            <div style="margin-top: 10px;">
+              <button type="button" class="btn-secondary" id="btnRedefinirPosicaoGadget" style="font-size: 11.5px; padding: 4px 10px;">
+                Redefinir Posição do Gadget
+              </button>
+            </div>
+          </section>
         </div>
 
         <!-- ABA 4: Ferramentas -->
         <div class="tab-pane" id="tab-ferramentas" role="tabpanel" aria-labelledby="tabBtnFerramentas">
+          <!-- Organizador de Arquivos (Árvore de Regras) -->
+          <section class="setup-section">
+            <div class="section-title" id="sectionOrganizadorTitle">Organizador de Arquivos</div>
+            <p class="input-hint" id="hintOrganizador" style="margin-top: 2px; margin-bottom: 8px;">
+              Personalize para onde cada tipo de arquivo é movido ao organizar a pasta Downloads.
+            </p>
+            <div class="organizador-tree-wrapper">
+              <div class="organizador-tree-actions">
+                <button type="button" class="btn-secondary" id="btnRestaurarRegrasOrganizador" style="font-size: 11.5px; padding: 4px 8px;">
+                  Restaurar Padrões
+                </button>
+                <button type="button" class="btn-secondary" id="btnSalvarRegrasOrganizador" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;">
+                  Salvar Regras
+                </button>
+              </div>
+              <div id="statusRegrasOrganizador" class="aero-status-msg" style="display: none;"></div>
+              <div class="organizador-tree-scroll" id="organizadorArvoreContainer">
+                <!-- Nós da árvore gerados via TypeScript -->
+              </div>
+            </div>
+          </section>
+
           <!-- Atalhos Globais -->
           <section class="setup-section shortcuts-section">
             <div class="section-title" id="sectionShortcutsTitle">Atalhos do Teclado</div>
