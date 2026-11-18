@@ -73,6 +73,14 @@ btnFechar?.addEventListener("click", async () => {
     await invoke("esconder_pergunta");
 });
 
+window.addEventListener("keydown", async (event: KeyboardEvent) => {
+    if (event.key === "Escape") {
+        event.preventDefault();
+        if (inputPergunta) inputPergunta.value = "";
+        await invoke("esconder_pergunta");
+    }
+});
+
 aplicarIdioma();
 
 window.addEventListener("focus", () => {

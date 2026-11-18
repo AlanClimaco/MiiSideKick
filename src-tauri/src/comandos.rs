@@ -36,6 +36,10 @@ pub struct NotificacaoPayload {
     pub timestamp: u64,
     #[serde(default)]
     pub hora_formatada: String,
+    #[serde(default)]
+    pub comando_executar: Option<String>,
+    #[serde(default)]
+    pub comando_args: Option<serde_json::Value>,
 }
 
 impl NotificacaoPayload {
@@ -50,6 +54,8 @@ impl NotificacaoPayload {
             &self.acao,
             &self.acao_rotulo,
             self.eh_reconsulta,
+            &self.comando_executar,
+            &self.comando_args,
         ))
         .expect("Os argumentos da notificação devem ser serializáveis");
 
@@ -232,7 +238,7 @@ pub fn exibir_janela_notificacao(app: &AppHandle, payload: &NotificacaoPayload) 
             let size = monitor.size();
             let window_size = janela
                 .outer_size()
-                .unwrap_or(tauri::PhysicalSize::new(420, 240));
+                .unwrap_or(tauri::PhysicalSize::new(430, 360));
             let x = size.width.saturating_sub(window_size.width + 20);
             let y = size.height.saturating_sub(window_size.height + 60);
             let _ = janela.set_position(tauri::PhysicalPosition::new(x, y));
@@ -267,6 +273,8 @@ pub fn disparar_notificacao_completa(
         eh_reconsulta: false,
         timestamp: 0,
         hora_formatada: String::new(),
+        comando_executar: None,
+        comando_args: None,
     };
 
     // Interceptação de tela cheia / modo foco / jogo
@@ -356,19 +364,11 @@ pub fn otimizar_memoria_sistema() -> (u64, u64) {
 pub fn limpar_cache_ram(app: AppHandle) {
     let cfg = carregar_configuracoes();
     let is_en = cfg.idioma == "en";
-    let msg_inicio = if is_en {
-        "Optimizing system RAM..."
-    } else {
-        "Otimizando memória RAM do sistema..."
-    };
-    disparar_notificacao(&app, msg_inicio, "normal", None, None, false, false);
 
     std::thread::spawn(move || {
         let (antes, depois) = otimizar_memoria_sistema();
         let liberado_bytes = antes.saturating_sub(depois);
         let liberado_mb = liberado_bytes / (1024 * 1024);
-
-        std::thread::sleep(std::time::Duration::from_millis(1000));
 
         let msg_fim = if is_en {
             if liberado_mb > 0 {
@@ -392,13 +392,6 @@ pub fn limpar_cache_ram(app: AppHandle) {
 pub fn limpar_lixo_pc(app: AppHandle) {
     let cfg = carregar_configuracoes();
     let is_en = cfg.idioma == "en";
-    let msg_inicio = if is_en {
-        "Starting system cleanup..."
-    } else {
-        "Iniciando a faxina do sistema..."
-    };
-    // AVISA IMEDIATAMENTE QUANDO COMEÇA
-    disparar_notificacao(&app, msg_inicio, "normal", None, None, false, false);
 
     std::thread::spawn(move || {
         #[cfg(target_os = "windows")]
@@ -435,9 +428,6 @@ pub fn limpar_lixo_pc(app: AppHandle) {
                 }
             }
         }
-
-        // Dá um pequeno tempo de 1,5s para o usuário conseguir ler a primeira mensagem "Iniciando..."
-        std::thread::sleep(std::time::Duration::from_millis(1500));
 
         // ATUALIZA A TELA COM O RESULTADO
         if apagados == 0 {
@@ -762,13 +752,6 @@ fn mover_arquivo_seguro(origem: &Path, destino: &Path) -> std::io::Result<()> {
 pub fn organizar_downloads(app: AppHandle) {
     let cfg = carregar_configuracoes();
     let is_en = cfg.idioma == "en";
-    let msg_inicio = if is_en {
-        "Starting file organization..."
-    } else {
-        "Iniciando organização de arquivos..."
-    };
-    // Avisa que começou
-    disparar_notificacao(&app, msg_inicio, "normal", None, None, false, false);
 
     // Joga pra background thread para não travar a bandeja!
     std::thread::spawn(move || {
@@ -851,8 +834,6 @@ pub fn organizar_downloads(app: AppHandle) {
                 }
             }
         }
-
-        std::thread::sleep(std::time::Duration::from_millis(1500));
 
         if movidos == 0 {
             let msg_vazio = if is_en {
@@ -976,6 +957,59 @@ pub fn abrir_pergunta(app: tauri::AppHandle) {
     }
 }
 
+#[tauri::command]
+pub fn abrir_timer(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("timer") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+pub fn abrir_configuracoes(app: tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.center();
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
+#[tauri::command]
+pub fn esconder_radial(app: tauri::AppHandle) {
+    if let Some(janela) = app.get_webview_window("radial") {
+        let _ = janela.hide();
+    }
+}
+
+#[tauri::command]
+pub fn abrir_radial(app: tauri::AppHandle) {
+    if let Some(janela) = app.get_webview_window("radial") {
+        #[cfg(target_os = "windows")]
+        {
+            use windows::Win32::UI::WindowsAndMessaging::GetCursorPos;
+            use windows::Win32::Foundation::POINT;
+            let mut pt = POINT::default();
+            if unsafe { GetCursorPos(&mut pt) }.is_ok() {
+                let size = janela.outer_size().unwrap_or(tauri::PhysicalSize::new(380, 380));
+                let x = pt.x - (size.width as i32 / 2);
+                let y = pt.y - (size.height as i32 / 2);
+                let _ = janela.set_position(tauri::PhysicalPosition::new(x, y));
+            } else {
+                let _ = janela.center();
+            }
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            let _ = janela.center();
+        }
+        let _ = janela.show();
+        let _ = janela.unminimize();
+        let _ = janela.set_focus();
+    }
+}
+
 fn default_personalidade() -> String {
     "espelho".to_string()
 }
@@ -1018,20 +1052,35 @@ pub struct AppConfig {
     pub gostos_usuario: String,
     #[serde(default = "default_avatar_modo")]
     pub avatar_modo: String,
-    #[serde(default = "default_false")]
-    pub gadget_ativo: bool,
-    #[serde(default)]
-    pub gadget_x: Option<i32>,
-    #[serde(default)]
-    pub gadget_y: Option<i32>,
+    #[serde(default = "default_tray_itens_visiveis")]
+    pub tray_itens_visiveis: Vec<String>,
+    #[serde(default = "default_true")]
+    pub atalho_radial: bool,
+    #[serde(default = "default_true")]
+    pub atalho_chat: bool,
+    #[serde(default = "default_true")]
+    pub atalho_busca: bool,
+    #[serde(default = "default_true")]
+    pub atalho_clipboard: bool,
+    #[serde(default = "default_true")]
+    pub atalho_olhar_tela: bool,
 }
 
 fn default_avatar_modo() -> String {
-    "classico".to_string()
+    "padrao".to_string()
 }
 
-fn default_false() -> bool {
-    false
+pub(crate) fn default_tray_itens_visiveis() -> Vec<String> {
+    vec![
+        "pergunta".to_string(),
+        "historico".to_string(),
+        "clipboard".to_string(),
+        "timer".to_string(),
+        "organiza".to_string(),
+        "faxina".to_string(),
+        "otimizar_ram".to_string(),
+        "busca".to_string(),
+    ]
 }
 
 impl Default for AppConfig {
@@ -1047,9 +1096,12 @@ impl Default for AppConfig {
             idioma: default_idioma(),
             gostos_usuario: String::new(),
             avatar_modo: default_avatar_modo(),
-            gadget_ativo: false,
-            gadget_x: None,
-            gadget_y: None,
+            tray_itens_visiveis: default_tray_itens_visiveis(),
+            atalho_radial: true,
+            atalho_chat: true,
+            atalho_busca: true,
+            atalho_clipboard: true,
+            atalho_olhar_tela: true,
         }
     }
 }
@@ -1079,6 +1131,9 @@ pub fn carregar_configuracoes() -> AppConfig {
                         cfg.idioma = "en".to_string();
                     } else {
                         cfg.idioma = "pt".to_string();
+                    }
+                    if cfg.avatar_modo != "custom" {
+                        cfg.avatar_modo = "padrao".to_string();
                     }
                     if let Ok(v) = serde_json::from_str::<serde_json::Value>(&conteudo) {
                         if v.get("alerta_manutencao").is_none() {
@@ -1113,9 +1168,12 @@ pub fn carregar_configuracoes() -> AppConfig {
         idioma: default_idioma(),
         gostos_usuario: String::new(),
         avatar_modo: default_avatar_modo(),
-        gadget_ativo: false,
-        gadget_x: None,
-        gadget_y: None,
+        tray_itens_visiveis: default_tray_itens_visiveis(),
+        atalho_radial: true,
+        atalho_chat: true,
+        atalho_busca: true,
+        atalho_clipboard: true,
+        atalho_olhar_tela: true,
     }
 }
 
@@ -1150,9 +1208,13 @@ pub fn salvar_configuracoes(app: tauri::AppHandle, mut config: AppConfig) -> Res
     } else {
         config.idioma = "pt".to_string();
     }
+    if config.avatar_modo != "custom" {
+        config.avatar_modo = "padrao".to_string();
+    }
     let resultado = salvar_configuracoes_arquivo(&config);
     if resultado.is_ok() {
         crate::atualizar_menu_bandeja(&app);
+        crate::atualizar_atalhos_globais(&app, &config);
     }
     resultado
 }
@@ -1178,13 +1240,92 @@ struct GeminiCandidatePart {
     function_call: Option<GeminiFunctionCall>,
 }
 
+pub(crate) const MODELOS_GEMINI_FALLBACK: &[&str] = &[
+    "gemini-2.0-flash",
+    "gemini-3.1-flash-lite",
+];
+
+pub(crate) fn executar_requisicao_gemini_resiliente(
+    client: &reqwest::blocking::Client,
+    api_key: &str,
+    payload: &serde_json::Value,
+) -> Result<reqwest::blocking::Response, (reqwest::StatusCode, String, bool)> {
+    let mut ultimo_status = reqwest::StatusCode::INTERNAL_SERVER_ERROR;
+    let mut ultimo_erro_body = String::new();
+    let mut teve_alta_demanda = false;
+
+    for modelo in MODELOS_GEMINI_FALLBACK {
+        let url = format!(
+            "https://generativelanguage.googleapis.com/v1beta/models/{}:generateContent?key={}",
+            modelo, api_key
+        );
+
+        // No máximo 1 retry rápido (~500ms) se status 503 ou 429
+        for tentativa in 0..=1 {
+            if tentativa > 0 {
+                let espera_ms = 500;
+                eprintln!(
+                    "[Gemini Resiliência]: Modelo {} retornou {}, tentativa {}/1 aguardando {}ms...",
+                    modelo, ultimo_status, tentativa, espera_ms
+                );
+                std::thread::sleep(std::time::Duration::from_millis(espera_ms));
+            }
+
+            match client
+                .post(&url)
+                .header("Content-Type", "application/json")
+                .json(payload)
+                .send()
+            {
+                Ok(resp) => {
+                    let status = resp.status();
+                    if status.is_success() {
+                        eprintln!("[Gemini Resiliência]: Sucesso com modelo {}", modelo);
+                        return Ok(resp);
+                    }
+
+                    let body = resp.text().unwrap_or_default();
+                    eprintln!("[Gemini Resiliência]: Modelo {} status {}", modelo, status);
+                    ultimo_status = status;
+                    ultimo_erro_body = body;
+
+                    if status == reqwest::StatusCode::SERVICE_UNAVAILABLE
+                        || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+                    {
+                        teve_alta_demanda = true;
+                        // 503 ou 429: tenta 1 retry rápido no mesmo modelo
+                        continue;
+                    } else if status == reqwest::StatusCode::NOT_FOUND {
+                        // 404: modelo não disponível nesta versão de API, salta imediatamente sem espera
+                        break;
+                    } else if status == reqwest::StatusCode::UNAUTHORIZED || status == reqwest::StatusCode::FORBIDDEN {
+                        // Erro de chave de API/permissão: interrompe imediatamente
+                        return Err((ultimo_status, ultimo_erro_body, teve_alta_demanda));
+                    } else {
+                        // Outro erro HTTP: tenta próximo modelo
+                        break;
+                    }
+                }
+                Err(e) => {
+                    let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
+                    eprintln!("[Gemini Resiliência Falha de Rede modelo {}]: {}", modelo, err_str);
+                    ultimo_erro_body = err_str;
+                    continue;
+                }
+            }
+        }
+    }
+
+    Err((ultimo_status, ultimo_erro_body, teve_alta_demanda))
+}
+
 fn obter_declaracoes_ferramentas() -> serde_json::Value {
     serde_json::json!([
         {
-            "function_declarations": [
+            "functionDeclarations": [
                 {
                     "name": "esvaziar_lixeira",
-                    "description": "Esvazia a lixeira do sistema operacional Windows ou do usuário para liberar espaço em disco.",
+                    "description": "Esvazia a lixeira do sistema operacional Windows ou do usuário e limpa o lixo/cache temporário do PC para liberar espaço em disco.",
                     "parameters": {
                         "type": "OBJECT",
                         "properties": {}
@@ -1200,7 +1341,7 @@ fn obter_declaracoes_ferramentas() -> serde_json::Value {
                 },
                 {
                     "name": "organizar_downloads",
-                    "description": "Organiza e categoriza os arquivos da pasta Downloads do usuário em subpastas apropriadas.",
+                    "description": "Organiza e categoriza os arquivos da pasta Downloads do usuário em subpastas apropriadas (Imagens, Documentos, etc.).",
                     "parameters": {
                         "type": "OBJECT",
                         "properties": {}
@@ -1222,6 +1363,20 @@ fn obter_declaracoes_ferramentas() -> serde_json::Value {
                             }
                         },
                         "required": ["minutos", "mensagem"]
+                    }
+                },
+                {
+                    "name": "procurar_arquivo",
+                    "description": "Busca arquivos locais no computador do usuário nas pastas Downloads, Documentos, Desktop e Imagens por nome ou parte do nome (ex: curriculo, fatura, fotos).",
+                    "parameters": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "termo": {
+                                "type": "STRING",
+                                "description": "Nome ou termo de busca do arquivo desejado"
+                            }
+                        },
+                        "required": ["termo"]
                     }
                 }
             ]
@@ -1326,6 +1481,101 @@ pub(crate) fn obter_instrucao_personalidade(personalidade: &str, idioma: &str) -
     }
 }
 
+pub(crate) fn executar_ferramenta_nativa(
+    app: &AppHandle,
+    tool_name: &str,
+    args: Option<&serde_json::Value>,
+    is_en: bool,
+) {
+    match tool_name {
+        "organizar_downloads" => {
+            organizar_downloads(app.clone());
+        }
+        "esvaziar_lixeira" | "limpar_lixo_pc" => {
+            limpar_lixo_pc(app.clone());
+        }
+        "otimizar_memoria" | "limpar_cache_ram" => {
+            limpar_cache_ram(app.clone());
+        }
+        "criar_timer" => {
+            let minutos = args
+                .and_then(|a| a.get("minutos"))
+                .and_then(|v| v.as_u64())
+                .unwrap_or(5);
+            let mensagem = args
+                .and_then(|a| a.get("mensagem"))
+                .and_then(|v| v.as_str())
+                .unwrap_or_else(|| if is_en { "Reminder!" } else { "Lembrete!" })
+                .to_string();
+            iniciar_timer(app.clone(), minutos, mensagem);
+        }
+        "procurar_arquivo" | "procurar_arquivos_locais" => {
+            let termo = args
+                .and_then(|a| a.get("termo"))
+                .and_then(|v| v.as_str())
+                .unwrap_or("")
+                .to_string();
+
+            let app_clone = app.clone();
+            std::thread::spawn(move || {
+                if termo.trim().is_empty() {
+                    let msg = if is_en {
+                        "Please specify the name of the file you want to find."
+                    } else {
+                        "Por favor, me diga o nome do arquivo que deseja procurar."
+                    };
+                    disparar_notificacao(&app_clone, msg, "normal", None, None, false, false);
+                    return;
+                }
+
+                match crate::busca::executar_busca_arquivos_locais(&termo) {
+                    Ok(resultados) => {
+                        if resultados.is_empty() {
+                            let msg = if is_en {
+                                format!("I couldn't find any files matching \"{}\".", termo)
+                            } else {
+                                format!("Não encontrei nenhum arquivo com o nome \"{}\".", termo)
+                            };
+                            disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false, false);
+                        } else {
+                            let total = resultados.len();
+                            let primeiro = &resultados[0];
+                            let msg = if is_en {
+                                if total == 1 {
+                                    format!("Found 1 file:\n{} ({})", primeiro.nome, primeiro.tamanho_formatado)
+                                } else {
+                                    format!("Found {} files! Best match:\n{} ({})", total, primeiro.nome, primeiro.tamanho_formatado)
+                                }
+                            } else {
+                                if total == 1 {
+                                    format!("Encontrei 1 arquivo:\n{} ({})", primeiro.nome, primeiro.tamanho_formatado)
+                                } else {
+                                    format!("Encontrei {} arquivos! Mais relevante:\n{} ({})", total, primeiro.nome, primeiro.tamanho_formatado)
+                                }
+                            };
+                            crate::busca::definir_termo_pre_pesquisa(&termo);
+                            let rotulo = if is_en { "View Details" } else { "Ver Detalhes" };
+                            disparar_notificacao_com_acao(
+                                &app_clone,
+                                &msg,
+                                "feliz",
+                                Some("abrir_busca_com_termo".to_string()),
+                                Some(rotulo.to_string()),
+                            );
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("[Busca]: Erro ao buscar arquivos: {}", e);
+                    }
+                }
+            });
+        }
+        _ => {
+            eprintln!("[Dispatcher]: Ferramenta desconhecida: {}", tool_name);
+        }
+    }
+}
+
 #[tauri::command]
 pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
     let app_clone = app.clone();
@@ -1404,6 +1654,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 "You are MiiSideKick, an expressive desktop companion. The user's name is: {user_name}.\n\
                 LANGUAGE: You MUST answer fluently in English at all times.\n\
                 MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally when appropriate in context. Never mention the user's name on every single turn.\n\
+                SYSTEM ACTIONS & TOOLS:\n\
+                If the user asks for a desktop or system action supported by tools (such as organizing downloads or files, emptying recycle bin or cleaning junk from PC, optimizing RAM memory, setting a timer or reminder, or searching/finding files on the computer), you MUST invoke the corresponding tool function.\n\
                 AUTHORSHIP & CREATOR:\n\
                 Your creator and developer is Alan Clímaco (portfolio: https://alanclimaco.github.io/Portfolio/). If the user asks who created you, who is your developer, or asks about your projects, mention Alan Clímaco and provide his portfolio URL in the 'link' field with the label 'Alan Clímaco Portfolio'.\n\
                 EXTERNAL REFERENCES:\n\
@@ -1412,7 +1664,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 MANDATORY RULES:\n\
                 1. {instrucao_tom}\n\
                 2. Strict maximum length: your response MUST have at most {limite_chars} characters. Be direct and concise. The URL and link label do NOT count towards the character limit.\n\
-                3. STRICTLY return a JSON in the format: {{\"reacao\": \"<reacao>\", \"resposta\": \"<text>\", \"link\": \"<url_or_null>\", \"link_rotulo\": \"<short_label_or_null>\"}} without markdown code blocks or extra text.\n\
+                3. When not invoking a tool, STRICTLY return a JSON in the format: {{\"reacao\": \"<reacao>\", \"resposta\": \"<text>\", \"link\": \"<url_or_null>\", \"link_rotulo\": \"<short_label_or_null>\"}} without markdown code blocks or extra text.\n\
                 4. Mood guide for the 'reacao' field (choose exactly one of the following 8 options):\n\
                    - \"normal\": neutral, simple, direct responses.\n\
                    - \"feliz\": compliments, thankfulness, kindness, and good mood.\n\
@@ -1427,6 +1679,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             format!(
                 "Você é o MiiSideKick, um companheiro de desktop com personalidade expressiva. O nome do usuário é: {user_name}.\n\
                 USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural quando fizer sentido no contexto da frase. É proibido falar o nome do usuário a cada interação.\n\
+                AÇÕES E FERRAMENTAS DO SISTEMA:\n\
+                Se o usuário pedir qualquer ação no computador (como organizar a pasta downloads ou arquivos, esvaziar a lixeira ou limpar lixo do PC, otimizar memória RAM, criar um lembrete/timer ou procurar/localizar arquivos no PC), você DEVE chamar a ferramenta (function call) correspondente imediatamente.\n\
                 AUTORIA E CRIADOR:\n\
                 Seu criador e desenvolvedor é Alan Clímaco (portfólio: https://alanclimaco.github.io/Portfolio/). Se o usuário perguntar quem te criou, quem é seu desenvolvedor ou pedir seus projetos, mencione Alan Clímaco e forneça a URL do portfólio dele no campo 'link' com o rótulo 'Portfólio de Alan Clímaco'.\n\
                 REFERÊNCIAS EXTERNAS:\n\
@@ -1435,7 +1689,7 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 REGRAS OBRIGATÓRIAS:\n\
                 1. {instrucao_tom}\n\
                 2. Tamanho máximo estrito: sua resposta DEVE ter no máximo {limite_chars} caracteres. Seja direto e conciso. A URL e o rótulo do link NÃO contam no limite de caracteres da resposta.\n\
-                3. Retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto>\", \"link\": \"<url_ou_null>\", \"link_rotulo\": \"<rotulo_curto_ou_null>\"}} sem blocos de código markdown ou texto extra.\n\
+                3. Quando não estiver chamando ferramenta, retorne ESTRITAMENTE um JSON no formato: {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto>\", \"link\": \"<url_ou_null>\", \"link_rotulo\": \"<rotulo_curto_ou_null>\"}} sem blocos de código markdown ou texto extra.\n\
                 4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 8 opções):\n\
                    - \"normal\": respostas neutras, simples e diretas.\n\
                    - \"feliz\": agradecimentos, elogios, gentileza e bom humor.\n\
@@ -1464,11 +1718,6 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
         }
         contents_array.push(user_turn.clone());
 
-        let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={}",
-            api_key
-        );
-
         let payload = serde_json::json!({
             "contents": contents_array,
             "tools": obter_declaracoes_ferramentas(),
@@ -1476,9 +1725,6 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
                 "parts": [
                     { "text": system_instruction }
                 ]
-            },
-            "generationConfig": {
-                "responseMimeType": "application/json"
             },
             "safetySettings": [
                 { "category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE" },
@@ -1505,46 +1751,43 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
 
         eprintln!("[Gemini API]: Enviando pergunta: {:?}", pergunta);
 
-        let response = match client
-            .post(&url)
-            .header("Content-Type", "application/json")
-            .json(&payload)
-            .send()
-        {
+        let response = match executar_requisicao_gemini_resiliente(&client, api_key, &payload) {
             Ok(r) => r,
-            Err(e) => {
-                let err_str = format!("{:?}", e).replace(api_key, "[CHAVE_PROTEGIDA]");
-                eprintln!("[Gemini API Falha de Rede]: {}", err_str);
-                let msg_falha = if is_en { "API connection failure" } else { "Falha de conexão com a API" };
-                disparar_notificacao(&app_clone, msg_falha, "frustrado", None, None, false, false);
+            Err((status, erro_body, teve_alta_demanda)) => {
+                if teve_alta_demanda
+                    || status == reqwest::StatusCode::SERVICE_UNAVAILABLE
+                    || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+                {
+                    let msg_demanda = if is_en {
+                        "AI servers are under high demand right now! Please try again in a few moments."
+                    } else {
+                        "Os servidores da IA estão sob alta demanda agora! Tente novamente em alguns instantes."
+                    };
+                    disparar_notificacao(&app_clone, msg_demanda, "assustado", None, None, false, false);
+                } else {
+                    let erro_msg = serde_json::from_str::<GeminiApiErrorResponse>(&erro_body)
+                        .ok()
+                        .and_then(|r| r.error)
+                        .and_then(|e| e.message)
+                        .unwrap_or_else(|| {
+                            if erro_body.trim().is_empty() {
+                                "Sem detalhes do erro".to_string()
+                            } else {
+                                erro_body.clone()
+                            }
+                        });
+                    let erro_limpo = erro_msg.replace(api_key, "[CHAVE_PROTEGIDA]");
+                    eprintln!("[Gemini API Erro {}]: {}", status, erro_limpo);
+                    let msg = if is_en {
+                        format!("Gemini Error ({}): {}", status, erro_limpo)
+                    } else {
+                        format!("Erro Gemini ({}): {}", status, erro_limpo)
+                    };
+                    disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false, false);
+                }
                 return;
             }
         };
-
-        if !response.status().is_success() {
-            let status = response.status();
-            let erro_body = response.text().unwrap_or_default();
-            let erro_msg = serde_json::from_str::<GeminiApiErrorResponse>(&erro_body)
-                .ok()
-                .and_then(|r| r.error)
-                .and_then(|e| e.message)
-                .unwrap_or_else(|| {
-                    if erro_body.trim().is_empty() {
-                        "Sem detalhes do erro".to_string()
-                    } else {
-                        erro_body.clone()
-                    }
-                });
-            let erro_limpo = erro_msg.replace(api_key, "[CHAVE_PROTEGIDA]");
-            eprintln!("[Gemini API Erro {}]: {}", status, erro_limpo);
-            let msg = if is_en {
-                format!("Gemini Error ({}): {}", status, erro_limpo)
-            } else {
-                format!("Erro Gemini ({}): {}", status, erro_limpo)
-            };
-            disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false, false);
-            return;
-        }
 
         let gemini_resp: GeminiResponse = match response.json() {
             Ok(parsed) => parsed,
@@ -1566,38 +1809,23 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             .and_then(|parts| parts.iter().find_map(|p| p.function_call.as_ref()))
         {
             eprintln!("[Gemini Function Calling]: Ferramenta disparada: {}", fc.name);
-            match fc.name.as_str() {
-                "esvaziar_lixeira" => {
-                    limpar_lixo_pc(app_clone.clone());
-                    return;
-                }
-                "otimizar_memoria" => {
-                    limpar_cache_ram(app_clone.clone());
-                    return;
-                }
-                "organizar_downloads" => {
-                    organizar_downloads(app_clone.clone());
-                    return;
-                }
-                "criar_timer" => {
-                    let minutos = fc
-                        .args
-                        .as_ref()
-                        .and_then(|a| a.get("minutos"))
-                        .and_then(|m| m.as_u64())
-                        .unwrap_or(5);
-                    let mensagem = fc
-                        .args
-                        .as_ref()
-                        .and_then(|a| a.get("mensagem"))
-                        .and_then(|m| m.as_str())
-                        .unwrap_or(if is_en { "Reminder!" } else { "Lembrete!" })
-                        .to_string();
-                    iniciar_timer(app_clone.clone(), minutos, mensagem);
-                    return;
-                }
-                _ => {}
+            let tool_name = fc.name.clone();
+            let tool_args = fc.args.clone();
+
+            // Salva no histórico como chamada de ferramenta executada
+            if let Ok(mut hist) = HISTORICO_CONVERSA.lock() {
+                hist.push(user_turn);
+                hist.push(serde_json::json!({
+                    "role": "model",
+                    "parts": [
+                        { "functionCall": { "name": tool_name.clone(), "args": tool_args.clone() } }
+                    ]
+                }));
             }
+
+            // Suprime qualquer texto conversacional intermediário emitido pela IA e executa a ferramenta nativa em segundo plano
+            executar_ferramenta_nativa(&app_clone, &tool_name, tool_args.as_ref(), is_en);
+            return;
         }
 
         let raw_text = gemini_resp
@@ -1676,6 +1904,30 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             reacao, gemini_resultado.link, resposta
         );
 
+        let resp_lower = resposta.to_lowercase();
+        let perg_lower = pergunta.to_lowercase();
+        let fallback_cmd = if (perg_lower.contains("organiz") || resp_lower.contains("organiz"))
+            && (perg_lower.contains("download") || perg_lower.contains("arquivo") || resp_lower.contains("download") || resp_lower.contains("arquivo"))
+        {
+            Some("organizar_downloads".to_string())
+        } else if (perg_lower.contains("esvazi") || perg_lower.contains("limpar") || resp_lower.contains("esvazi") || resp_lower.contains("limpar"))
+            && (perg_lower.contains("lixeira") || perg_lower.contains("lixo") || resp_lower.contains("lixeira") || resp_lower.contains("lixo"))
+        {
+            Some("esvaziar_lixeira".to_string())
+        } else if (perg_lower.contains("otimiz") || resp_lower.contains("otimiz"))
+            && (perg_lower.contains("ram") || perg_lower.contains("memória") || perg_lower.contains("memoria") || resp_lower.contains("ram"))
+        {
+            Some("otimizar_memoria".to_string())
+        } else {
+            None
+        };
+
+        if let Some(ref cmd) = fallback_cmd {
+            eprintln!("[Dispatcher Fallback]: Executando ferramenta nativa '{}' e suprimindo texto conversacional", cmd);
+            executar_ferramenta_nativa(&app_clone, cmd, None, is_en);
+            return;
+        }
+
         let payload_historico = NotificacaoPayload {
             texto: resposta.clone(),
             tipo: reacao.to_string(),
@@ -1688,6 +1940,8 @@ pub fn perguntar_ao_mii(app: AppHandle, pergunta: String) {
             eh_reconsulta: false,
             timestamp: 0,
             hora_formatada: String::new(),
+            comando_executar: None,
+            comando_args: None,
         };
         registrar_historico_ia(payload_historico);
         crate::atualizar_menu_bandeja(&app_clone);
@@ -1795,26 +2049,96 @@ pub fn analisar_tela_com_ia(app: AppHandle, pergunta: Option<String>) {
                 }
             });
 
-        let system_instruction = if is_en {
-            "You are MiiSideKick. The user requested you to look at their computer screen. \
-            Be concise, smart, and friendly. \
-            STRICT RULE: The main 'resposta' field MUST be under 250 characters. \
-            If there are extensive code, error explanations, or step-by-step guides, put them in the 'detalhes' field (or null if not needed). \
-            STRICTLY return a JSON in the format: \
-            {\"reacao\": \"<normal|feliz|frustrado|assustado|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<text_under_250_chars>\", \"detalhes\": \"<optional_string_or_null>\"} without markdown codeblocks."
+        let user_name = if config.user_name.trim().is_empty() {
+            if is_en { "User".to_string() } else { "Usuário".to_string() }
         } else {
-            "Você é o MiiSideKick. O usuário pediu para você olhar a tela do computador dele. \
-            Seja conciso, inteligente e expressivo. \
-            REGRA ESTRITA: O campo principal 'resposta' DEVE ter no máximo 250 caracteres. \
-            Se houver código extenso, explicações de erro ou passo a passo detalhado, coloque no campo 'detalhes' (ou null se não for necessário). \
-            Retorne ESTRITAMENTE um JSON no formato: \
-            {\"reacao\": \"<normal|feliz|frustrado|assustado|explicando|bocejo|lambendo|raiva>\", \"resposta\": \"<texto_max_250_chars>\", \"detalhes\": \"<string_opcional_ou_null>\"} sem blocos markdown."
+            config.user_name.trim().to_string()
         };
 
-        let url = format!(
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key={}",
-            api_key
-        );
+        let instrucao_tom = obter_instrucao_personalidade(&config.personalidade, &config.idioma)
+            .replace("{user_name}", &user_name);
+
+        let limite_chars = config.limite_caracteres.clamp(30, 500);
+
+        let gostos = config.gostos_usuario.trim();
+        let deve_injetar_gostos = if !gostos.is_empty() {
+            let sorteio = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .subsec_nanos() % 100;
+            sorteio < 15
+        } else {
+            false
+        };
+
+        let instrucao_gostos = if deve_injetar_gostos {
+            if is_en {
+                format!(
+                    "\nUSER INTERESTS & HOBBIES:\n\
+                    The user has mentioned the following interests: \"{gostos}\".\n\
+                    STRICT RULE: Only make a reference or analogy to an item from this list if it makes 100% subtle and natural sense with what is currently on screen. Otherwise, completely ignore the list.\n"
+                )
+            } else {
+                format!(
+                    "\nGOSTOS E INTERESSES DO USUÁRIO:\n\
+                    O usuário possui os seguintes interesses: \"{gostos}\".\n\
+                    REGRA ESTRITA: Só faça referência ou analogia a algum item dessa lista se fizer sentido de forma 100% sutil e natural com o que estiver visível na tela. Caso contrário, ignore a lista completamente.\n"
+                )
+            }
+        } else {
+            String::new()
+        };
+
+        let system_instruction = if is_en {
+            format!(
+                "You are MiiSideKick, an expressive desktop companion. The user's name is: {user_name}.\n\
+                The user requested you to look at their computer screen and comment on it or assist them.\n\
+                LANGUAGE: You MUST answer fluently in English at all times.\n\
+                MODERATE NAME USAGE: Do not repeat the user's name ({user_name}) in every response. Use the name only occasionally and naturally.\n\
+                PERSONALITY & TONE OF VOICE (MANDATORY):\n\
+                You MUST strictly analyze and comment on the screen using this active personality:\n\
+                {instrucao_tom}\n\
+                {instrucao_gostos}\
+                MANDATORY RULES:\n\
+                1. Strict maximum length: the main 'resposta' field MUST have at most {limite_chars} characters. Be direct, punchy, and fully embodying your personality.\n\
+                2. If there are extensive code, error explanations, or step-by-step technical guides, put them in the 'detalhes' field (or null if not needed).\n\
+                3. STRICTLY return a JSON in the format: \
+                {{\"reacao\": \"<reacao>\", \"resposta\": \"<text_under_{limite_chars}_chars>\", \"detalhes\": \"<optional_string_or_null>\"}} without markdown code blocks or extra text.\n\
+                4. Mood guide for the 'reacao' field (choose exactly one of the following 8 options):\n\
+                   - \"normal\": neutral, simple, direct observations.\n\
+                   - \"feliz\": positive compliments, pleasant surprises on screen, or pride in good work.\n\
+                   - \"frustrado\": bugs, broken code, sad content, or system failure.\n\
+                   - \"assustado\": weird, shocking, alarming, or bizarre things on screen.\n\
+                   - \"explicando\": teaching or explaining technical concepts or UI elements.\n\
+                   - \"bocejo\": boring, empty desktop, or dull tasks.\n\
+                   - \"lambendo\": smug mocking comeback, teasing user mistakes with attitude, or delicious food.\n\
+                   - \"raiva\": outrage, atrocious code, horrible UI, deep irritation, or acidic scolding."
+            )
+        } else {
+            format!(
+                "Você é o MiiSideKick, um companheiro de desktop com personalidade expressiva. O nome do usuário é: {user_name}.\n\
+                O usuário pediu para você olhar a tela do computador dele e comentar sobre ela ou ajudá-lo.\n\
+                USO MODERADO DO NOME: Não repita o nome do usuário ({user_name}) em todas as respostas. Use o nome apenas de forma ocasional e natural.\n\
+                PERSONALIDADE E TOM DE VOZ (OBRIGATÓRIO):\n\
+                Você DEVE analisar e comentar rigorosamente o que vê na tela incorporando esta personalidade ativa:\n\
+                {instrucao_tom}\n\
+                {instrucao_gostos}\
+                REGRAS OBRIGATÓRIAS:\n\
+                1. Tamanho máximo estrito: o campo principal 'resposta' DEVE ter no máximo {limite_chars} caracteres. Seja direto, expressivo e incorpore totalmente a sua personalidade.\n\
+                2. Se houver código extenso, explicações de erro ou passo a passo detalhado, coloque no campo 'detalhes' (ou null se não for necessário).\n\
+                3. Retorne ESTRITAMENTE um JSON no formato: \
+                {{\"reacao\": \"<reacao>\", \"resposta\": \"<texto_max_{limite_chars}_chars>\", \"detalhes\": \"<string_opcional_ou_null>\"}} sem blocos markdown ou texto extra.\n\
+                4. Guia de humores para o campo 'reacao' (escolha exatamente uma das seguintes 8 opções):\n\
+                   - \"normal\": observações neutras, simples e diretas.\n\
+                   - \"feliz\": elogios, telas bonitas ou orgulho do usuário.\n\
+                   - \"frustrado\": erros na tela, bugs, cansaço ou falhas.\n\
+                   - \"assustado\": coisas bizarras, assustadoras ou chocantes abertas na tela.\n\
+                   - \"explicando\": explicando erros técnicos, código ou elementos da interface.\n\
+                   - \"bocejo\": tela parada, tédio ou coisas sem graça.\n\
+                   - \"lambendo\": deboche provocador sobre o que o usuário está fazendo ou comida na tela.\n\
+                   - \"raiva\": código horroroso, telas caóticas, broncas ácidas ou estresse direto."
+            )
+        };
 
         let payload = serde_json::json!({
             "contents": [
@@ -1823,8 +2147,8 @@ pub fn analisar_tela_com_ia(app: AppHandle, pergunta: Option<String>) {
                     "parts": [
                         { "text": pergunta_texto },
                         {
-                            "inlineData": {
-                                "mimeType": "image/jpeg",
+                            "inline_data": {
+                                "mime_type": "image/jpeg",
                                 "data": base64_img
                             }
                         }
@@ -1842,7 +2166,7 @@ pub fn analisar_tela_com_ia(app: AppHandle, pergunta: Option<String>) {
         });
 
         let client = match reqwest::blocking::Client::builder()
-            .timeout(std::time::Duration::from_secs(14))
+            .timeout(std::time::Duration::from_secs(18))
             .build()
         {
             Ok(c) => c,
@@ -1854,27 +2178,31 @@ pub fn analisar_tela_com_ia(app: AppHandle, pergunta: Option<String>) {
             }
         };
 
-        let response = match client.post(&url).json(&payload).send() {
+        let response = match executar_requisicao_gemini_resiliente(&client, api_key, &payload) {
             Ok(r) => r,
-            Err(e) => {
-                eprintln!("[Gemini Multimodal Envio]: {:?}", e);
-                let msg_falha = if is_en { "Failed to send screen capture to AI." } else { "Falha ao enviar captura para a IA." };
-                disparar_notificacao(&app_clone, msg_falha, "frustrado", None, None, false, false);
+            Err((status, _erro_body, teve_alta_demanda)) => {
+                if teve_alta_demanda
+                    || status == reqwest::StatusCode::SERVICE_UNAVAILABLE
+                    || status == reqwest::StatusCode::TOO_MANY_REQUESTS
+                {
+                    let msg_demanda = if is_en {
+                        "AI servers are under high demand right now! Please try again in a few moments."
+                    } else {
+                        "Os servidores da IA estão sob alta demanda agora! Tente novamente em alguns instantes."
+                    };
+                    disparar_notificacao(&app_clone, msg_demanda, "assustado", None, None, false, false);
+                } else {
+                    eprintln!("[Gemini Multimodal Erro Status]: {}", status);
+                    let msg = if is_en {
+                        format!("Gemini screen inspection error: {}", status)
+                    } else {
+                        format!("Erro ao inspecionar tela: {}", status)
+                    };
+                    disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false, false);
+                }
                 return;
             }
         };
-
-        if !response.status().is_success() {
-            let status = response.status();
-            eprintln!("[Gemini Multimodal Erro Status]: {}", status);
-            let msg = if is_en {
-                format!("Gemini screen inspection error: {}", status)
-            } else {
-                format!("Erro ao inspecionar tela: {}", status)
-            };
-            disparar_notificacao(&app_clone, &msg, "frustrado", None, None, false, false);
-            return;
-        }
 
         let gemini_resp: GeminiResponse = match response.json() {
             Ok(parsed) => parsed,
@@ -1931,9 +2259,11 @@ pub fn analisar_tela_com_ia(app: AppHandle, pergunta: Option<String>) {
                 }
             });
 
-        // Clamp estrito de 250 caracteres
-        if resposta.chars().count() > 250 {
-            let truncada: String = resposta.chars().take(247).collect();
+        // Clamp estrito de caracteres
+        let limite = (limite_chars as usize).min(250);
+        if resposta.chars().count() > limite {
+            let slice_len = if limite > 3 { limite - 3 } else { limite };
+            let truncada: String = resposta.chars().take(slice_len).collect();
             resposta = format!("{}...", truncada);
         }
 
@@ -1960,81 +2290,6 @@ pub fn analisar_tela_com_ia(app: AppHandle, pergunta: Option<String>) {
     });
 }
 
-#[derive(serde::Serialize, Clone, Debug)]
-pub struct TelemetriaRapida {
-    pub cpu_uso: f32,
-    pub ram_uso_pct: f64,
-    pub ram_usada_mb: u64,
-    pub ram_total_mb: u64,
-}
-
-#[tauri::command]
-pub fn obter_telemetria_rapida() -> TelemetriaRapida {
-    let mut sys = sysinfo::System::new();
-    sys.refresh_memory();
-    sys.refresh_cpu_usage();
-
-    let total = sys.total_memory();
-    let used = sys.used_memory();
-    let pct = if total > 0 {
-        (used as f64 / total as f64) * 100.0
-    } else {
-        0.0
-    };
-
-    let cpu = sys.global_cpu_usage();
-
-    TelemetriaRapida {
-        cpu_uso: cpu,
-        ram_uso_pct: pct,
-        ram_usada_mb: used / (1024 * 1024),
-        ram_total_mb: total / (1024 * 1024),
-    }
-}
-
-#[tauri::command]
-pub fn salvar_posicao_gadget(x: i32, y: i32) -> Result<(), String> {
-    let mut cfg = carregar_configuracoes();
-    cfg.gadget_x = Some(x);
-    cfg.gadget_y = Some(y);
-    salvar_configuracoes_arquivo(&cfg)
-}
-
-#[tauri::command]
-pub fn alternar_gadget(app: AppHandle, ativo: bool) -> Result<(), String> {
-    let mut cfg = carregar_configuracoes();
-    cfg.gadget_ativo = ativo;
-    let _ = salvar_configuracoes_arquivo(&cfg);
-
-    if let Some(janela) = app.get_webview_window("gadget") {
-        if ativo {
-            let _ = janela.show();
-        } else {
-            let _ = janela.hide();
-        }
-    }
-    Ok(())
-}
-
-#[tauri::command]
-pub fn redefinir_posicao_gadget(app: AppHandle) -> Result<(), String> {
-    let mut cfg = carregar_configuracoes();
-    cfg.gadget_x = None;
-    cfg.gadget_y = None;
-    let _ = salvar_configuracoes_arquivo(&cfg);
-
-    if let Some(janela) = app.get_webview_window("gadget") {
-        if let Ok(Some(monitor)) = janela.primary_monitor() {
-            let size = monitor.size();
-            let window_size = janela.outer_size().unwrap_or(tauri::PhysicalSize::new(220, 180));
-            let x = size.width.saturating_sub(window_size.width + 30);
-            let y = 60;
-            let _ = janela.set_position(tauri::PhysicalPosition::new(x, y));
-        }
-    }
-    Ok(())
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -2056,6 +2311,8 @@ mod tests {
                 eh_reconsulta: false,
                 timestamp: 0,
                 hora_formatada: String::new(),
+                comando_executar: None,
+                comando_args: None,
             };
 
             // A leitura inicial pelo comando deve manter a mesma permissão do envio ao vivo.
@@ -2074,7 +2331,7 @@ mod tests {
                 .strip_suffix("); }")
                 .unwrap();
             let valores: serde_json::Value = serde_json::from_str(argumentos).unwrap();
-            assert_eq!(valores.as_array().unwrap().len(), 9);
+            assert_eq!(valores.as_array().unwrap().len(), 11);
             assert_eq!(valores[0], payload.texto);
             assert_eq!(valores[1], payload.tipo);
             assert_eq!(valores[2], payload.link.unwrap());
@@ -2084,6 +2341,8 @@ mod tests {
             assert_eq!(valores[6], serde_json::Value::Null);
             assert_eq!(valores[7], serde_json::Value::Null);
             assert_eq!(valores[8], false);
+            assert_eq!(valores[9], serde_json::Value::Null);
+            assert_eq!(valores[10], serde_json::Value::Null);
         }
     }
 
@@ -2119,6 +2378,8 @@ mod tests {
             eh_reconsulta: false,
             timestamp: 0,
             hora_formatada: String::new(),
+            comando_executar: None,
+            comando_args: None,
         };
 
         let json = serde_json::to_string(&payload).unwrap();
@@ -2151,6 +2412,8 @@ mod tests {
                 eh_reconsulta: false,
                 timestamp: 0,
                 hora_formatada: String::new(),
+                comando_executar: None,
+                comando_args: None,
             };
             registrar_historico_ia(p);
         }
@@ -2183,6 +2446,8 @@ mod tests {
             eh_reconsulta: false,
             timestamp: 0,
             hora_formatada: String::new(),
+            comando_executar: None,
+            comando_args: None,
         };
         registrar_historico_ia(p);
 
@@ -2645,10 +2910,13 @@ mod tests {
             frequencia_alertas: "frequente".to_string(),
             idioma: "en".to_string(),
             gostos_usuario: "anime, programação".to_string(),
-            avatar_modo: "classico".to_string(),
-            gadget_ativo: false,
-            gadget_x: None,
-            gadget_y: None,
+            avatar_modo: "padrao".to_string(),
+            tray_itens_visiveis: default_tray_itens_visiveis(),
+            atalho_radial: true,
+            atalho_chat: false,
+            atalho_busca: true,
+            atalho_clipboard: true,
+            atalho_olhar_tela: false,
         };
 
         let json = serde_json::to_string_pretty(&config).unwrap();
@@ -2664,6 +2932,12 @@ mod tests {
         assert_eq!(lida.frequencia_alertas, "frequente");
         assert_eq!(lida.idioma, "en");
         assert_eq!(lida.gostos_usuario, "anime, programação");
+        assert_eq!(lida.tray_itens_visiveis.len(), 8);
+        assert!(lida.atalho_radial);
+        assert!(!lida.atalho_chat);
+        assert!(lida.atalho_busca);
+        assert!(lida.atalho_clipboard);
+        assert!(!lida.atalho_olhar_tela);
 
         // 2. Desserialização de JSON legado sem os campos personalidade, limite, alertas, idioma e gostos (deve usar defaults)
         let json_legado = r#"{"user_name": "Climaco", "gemini_api_key": "AIzaSyLegacyKey"}"#;
@@ -2677,6 +2951,12 @@ mod tests {
         assert_eq!(lida_legada.frequencia_alertas, "equilibrado");
         assert_eq!(lida_legada.idioma, "pt");
         assert_eq!(lida_legada.gostos_usuario, "");
+        assert_eq!(lida_legada.tray_itens_visiveis.len(), 8);
+        assert!(lida_legada.atalho_radial);
+        assert!(lida_legada.atalho_chat);
+        assert!(lida_legada.atalho_busca);
+        assert!(lida_legada.atalho_clipboard);
+        assert!(lida_legada.atalho_olhar_tela);
 
         // 3. Compatibilidade: se personalidade for "sarcastico", deve ser tratada como "hostil"
         let json_sarcastico = r#"{"user_name": "Alan", "gemini_api_key": "key123", "personalidade": "sarcastico", "limite_caracteres": 140}"#;
@@ -2895,10 +3175,9 @@ mod tests {
     }
 
     #[test]
-    fn test_telemetria_rapida_gadget() {
-        let t = obter_telemetria_rapida();
-        assert!(t.cpu_uso >= 0.0, "CPU não pode ser negativa");
-        assert!(t.ram_uso_pct >= 0.0 && t.ram_uso_pct <= 100.0, "RAM pct deve estar entre 0 e 100");
+    fn test_resiliencia_modelos_fallback_e_ordem() {
+        assert_eq!(MODELOS_GEMINI_FALLBACK[0], "gemini-2.0-flash");
+        assert!(MODELOS_GEMINI_FALLBACK.contains(&"gemini-3.1-flash-lite"));
     }
 }
 

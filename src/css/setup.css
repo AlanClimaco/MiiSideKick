@@ -636,26 +636,96 @@
 
 /* Atalhos Globais */
 .shortcuts-section {
-    padding-bottom: 0;
+    padding-bottom: 12px;
 }
 
 .shortcut-card {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
     padding: 10px 12px;
     background: rgba(255, 255, 255, 0.7);
     border: 1px solid rgba(135, 178, 212, 0.55);
     border-radius: 7px;
     box-shadow: inset 0 1px 0 #ffffff, 0 1px 3px rgba(30, 70, 105, 0.08);
+    transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.shortcut-card + .shortcut-card {
+    margin-top: 8px;
+}
+
+.shortcut-checkbox {
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.shortcut-card.shortcut-disabled {
+    opacity: 0.55;
+    background: rgba(240, 246, 252, 0.5);
+}
+
+.shortcut-card.shortcut-disabled .key-badge {
+    background: linear-gradient(180deg, #f0f4f8 0%, #e0e8f0 100%);
+    color: #7b94a8;
+    border-color: #b0c8dc;
+    box-shadow: none;
 }
 
 .shortcut-info {
+    flex: 1;
     display: flex;
     flex-direction: column;
     text-align: left;
     gap: 2px;
+}
+
+.shortcuts-extra-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+/* Botão Frutiger Aero Mostrar Mais / Menos */
+.btn-toggle-shortcuts {
+    margin-top: 10px;
+    width: 100%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 7px 14px;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(230, 244, 255, 0.75) 100%);
+    border: 1px solid rgba(135, 180, 215, 0.65);
+    border-radius: 6px;
+    color: #1a466a;
+    font-size: 11.5px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: inset 0 1px 0 #ffffff, 0 1px 2px rgba(20, 60, 100, 0.08);
+    transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+    user-select: none;
+}
+
+.btn-toggle-shortcuts:hover {
+    background: linear-gradient(180deg, #ffffff 0%, rgba(215, 238, 255, 0.92) 100%);
+    border-color: #4a8dc7;
+    color: #0b345c;
+    box-shadow: inset 0 1px 0 #ffffff, 0 2px 4px rgba(20, 60, 100, 0.14);
+}
+
+.btn-toggle-shortcuts:active {
+    background: linear-gradient(180deg, rgba(210, 233, 250, 0.9) 0%, rgba(230, 243, 255, 0.8) 100%);
+    box-shadow: inset 0 1px 2px rgba(10, 40, 70, 0.15);
+}
+
+.toggle-shortcuts-icon {
+    transition: transform 0.2s ease;
+}
+
+.btn-toggle-shortcuts.expanded .toggle-shortcuts-icon {
+    transform: rotate(180deg);
 }
 
 .shortcut-label {
@@ -933,6 +1003,11 @@
     line-height: 1.35;
     max-width: 100%;
     animation: fadeInStatus 0.2s ease;
+    transition: opacity 0.5s ease;
+}
+
+.update-status-msg.fade-out {
+    opacity: 0;
 }
 
 .update-status-msg.latest {
@@ -1013,9 +1088,8 @@
 }
 
 .organizador-tree-scroll {
-    max-height: 260px;
-    overflow-y: auto;
-    padding-right: 4px;
+    overflow: visible;
+    padding-right: 0;
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -1155,26 +1229,109 @@
 
 .aero-status-msg {
     font-size: 12px;
-    padding: 4px 8px;
-    border-radius: 4px;
-    margin-top: 4px;
-    text-align: center;
+    font-weight: 500;
+    padding: 7px 11px;
+    border-radius: 7px;
+    margin-top: 6px;
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    line-height: 1.4;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 2px 5px rgba(10, 45, 80, 0.06);
+    transition: all 0.2s ease;
 }
 
 .aero-status-success {
-    background: #eafaf1;
-    color: #27ae60;
-    border: 1px solid #a9dfbf;
+    background: linear-gradient(135deg, rgba(235, 252, 245, 0.95) 0%, rgba(215, 246, 235, 0.85) 100%);
+    border: 1px solid rgba(120, 205, 175, 0.7);
+    color: #12553b;
 }
 
 .aero-status-pending {
-    background: #fef9e7;
-    color: #d4ac0d;
-    border: 1px solid #f9e79f;
+    background: linear-gradient(135deg, rgba(240, 248, 255, 0.95) 0%, rgba(220, 238, 255, 0.85) 100%);
+    border: 1px solid rgba(135, 185, 225, 0.65);
+    color: #164364;
 }
 
 .aero-status-error {
-    background: #fdedec;
-    color: #c0392b;
-    border: 1px solid #f5b7b1;
+    background: linear-gradient(135deg, rgba(255, 242, 242, 0.95) 0%, rgba(255, 230, 230, 0.85) 100%);
+    border: 1px solid rgba(235, 160, 160, 0.7);
+    color: #822222;
+}
+
+/* ==========================================================================
+   ORGANIZADOR DE ARQUIVOS ACCORDION / DETAILS (FRUTIGER AERO)
+   ========================================================================== */
+details.organizador-accordion {
+    cursor: default;
+    transition: all 0.25s ease;
+    padding: 10px 14px;
+}
+
+details.organizador-accordion summary.organizador-accordion-summary {
+    list-style: none;
+    cursor: pointer;
+    user-select: none;
+    outline: none;
+    display: block;
+}
+
+details.organizador-accordion summary.organizador-accordion-summary::-webkit-details-marker {
+    display: none;
+}
+
+.organizador-accordion-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.organizador-accordion-title {
+    margin-bottom: 0 !important;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.organizador-accordion-toggle-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: #1b5278;
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(220, 238, 250, 0.85));
+    border: 1px solid rgba(130, 185, 220, 0.75);
+    border-radius: 12px;
+    padding: 2px 10px;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+details.organizador-accordion[open] .organizador-accordion-toggle-badge {
+    background: linear-gradient(180deg, rgba(220, 240, 255, 0.95), rgba(185, 215, 245, 0.9));
+    border-color: rgba(70, 140, 200, 0.85);
+    color: #0d3858;
+}
+
+.organizador-accordion-summary:hover .organizador-accordion-toggle-badge {
+    filter: brightness(1.05);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 2px 4px rgba(0, 90, 180, 0.15);
+}
+
+.organizador-accordion-body {
+    animation: aeroAccordionSlideDown 0.25s ease-out;
+}
+
+@keyframes aeroAccordionSlideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
 }

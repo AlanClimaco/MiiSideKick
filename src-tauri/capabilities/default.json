@@ -9,7 +9,8 @@
     "pergunta",
     "clipboard",
     "historico",
-    "gadget"
+    "radial",
+    "busca"
   ],
   "permissions": [
     "core:default",

@@ -28,11 +28,70 @@ const checkAlertaInteracaoBemEstar = document.getElementById("checkAlertaInterac
 const frequencyButtons = document.querySelectorAll<HTMLButtonElement>(".frequency-btn");
 const frequencyHint = document.getElementById("frequencyHint");
 
-// Controles do Gadget de Desktop
-const checkGadgetAtivo = document.getElementById("checkGadgetAtivo") as HTMLInputElement | null;
-const btnRedefinirPosicaoGadget = document.getElementById("btnRedefinirPosicaoGadget") as HTMLButtonElement | null;
-const sectionGadgetTitle = document.getElementById("sectionGadgetTitle");
-const spanGadgetAtivo = document.getElementById("spanGadgetAtivo");
+// Controles de Personalização da Bandeja (Tray)
+const checkTrayPergunta = document.getElementById("checkTrayPergunta") as HTMLInputElement | null;
+const checkTrayHistorico = document.getElementById("checkTrayHistorico") as HTMLInputElement | null;
+const checkTrayClipboard = document.getElementById("checkTrayClipboard") as HTMLInputElement | null;
+const checkTrayTimer = document.getElementById("checkTrayTimer") as HTMLInputElement | null;
+const checkTrayOrganiza = document.getElementById("checkTrayOrganiza") as HTMLInputElement | null;
+const checkTrayFaxina = document.getElementById("checkTrayFaxina") as HTMLInputElement | null;
+const checkTrayOtimizarRam = document.getElementById("checkTrayOtimizarRam") as HTMLInputElement | null;
+const checkTrayBusca = document.getElementById("checkTrayBusca") as HTMLInputElement | null;
+
+// Controles de Ativação e Expansão dos Atalhos Globais
+const checkAtalhoRadial = document.getElementById("checkAtalhoRadial") as HTMLInputElement | null;
+const checkAtalhoChat = document.getElementById("checkAtalhoChat") as HTMLInputElement | null;
+const checkAtalhoBusca = document.getElementById("checkAtalhoBusca") as HTMLInputElement | null;
+const checkAtalhoClipboard = document.getElementById("checkAtalhoClipboard") as HTMLInputElement | null;
+const checkAtalhoOlharTela = document.getElementById("checkAtalhoOlharTela") as HTMLInputElement | null;
+
+const cardAtalhoRadial = document.getElementById("cardAtalhoRadial");
+const cardAtalhoChat = document.getElementById("cardAtalhoChat");
+const cardAtalhoBusca = document.getElementById("cardAtalhoBusca");
+const cardAtalhoClipboard = document.getElementById("cardAtalhoClipboard");
+const cardAtalhoOlharTela = document.getElementById("cardAtalhoOlharTela");
+
+const btnToggleShortcuts = document.getElementById("btnToggleShortcuts") as HTMLButtonElement | null;
+const labelToggleShortcuts = document.getElementById("labelToggleShortcuts");
+const shortcutsExtraContainer = document.getElementById("shortcutsExtraContainer") as HTMLDivElement | null;
+
+let shortcutsExpanded = false;
+
+function atualizarRotuloToggleShortcuts() {
+    if (labelToggleShortcuts) {
+        const t = TRANSLATIONS[idiomaAtual] || TRANSLATIONS.pt;
+        labelToggleShortcuts.textContent = shortcutsExpanded ? t.showLessShortcuts : t.showMoreShortcuts;
+    }
+}
+
+function atualizarVisualAtalhoCard(checkbox: HTMLInputElement | null, card: HTMLElement | null) {
+    if (!checkbox || !card) return;
+    card.classList.toggle("shortcut-disabled", !checkbox.checked);
+}
+
+btnToggleShortcuts?.addEventListener("click", () => {
+    shortcutsExpanded = !shortcutsExpanded;
+    if (shortcutsExtraContainer) {
+        shortcutsExtraContainer.style.display = shortcutsExpanded ? "flex" : "none";
+    }
+    btnToggleShortcuts.classList.toggle("expanded", shortcutsExpanded);
+    btnToggleShortcuts.setAttribute("aria-expanded", String(shortcutsExpanded));
+    atualizarRotuloToggleShortcuts();
+});
+
+[
+    [checkAtalhoRadial, cardAtalhoRadial],
+    [checkAtalhoChat, cardAtalhoChat],
+    [checkAtalhoBusca, cardAtalhoBusca],
+    [checkAtalhoClipboard, cardAtalhoClipboard],
+    [checkAtalhoOlharTela, cardAtalhoOlharTela],
+].forEach(([cb, card]) => {
+    if (cb && card) {
+        (cb as HTMLInputElement).addEventListener("change", () => {
+            atualizarVisualAtalhoCard(cb as HTMLInputElement, card as HTMLElement);
+        });
+    }
+});
 
 // Elementos de Atalhos e Feedback
 const keyModifier = document.getElementById("keyModifier");
@@ -66,7 +125,7 @@ if (keyModifier) {
 let idiomaAtual = "pt";
 let personalidadeAtual = "espelho";
 let frequenciaAtual = "equilibrado";
-let avatarModoAtual = "classico";
+let avatarModoAtual = "padrao";
 
 interface Translations {
     windowTitle: string;
@@ -107,12 +166,29 @@ interface Translations {
     frequencyHints: Record<string, string>;
     sectionStartup: string;
     checkAutostart: string;
-    sectionGadget: string;
-    checkGadget: string;
-    btnResetGadget: string;
+    sectionTrayTitle: string;
+    hintTray: string;
+    spanTrayPergunta: string;
+    spanTrayHistorico: string;
+    spanTrayClipboard: string;
+    spanTrayTimer: string;
+    spanTrayOrganiza: string;
+    spanTrayFaxina: string;
+    spanTrayOtimizarRam: string;
+    spanTrayBusca: string;
     sectionShortcuts: string;
     shortcutChatLabel: string;
     shortcutChatDesc: string;
+    shortcutRadialLabel: string;
+    shortcutRadialDesc: string;
+    shortcutBuscaLabel: string;
+    shortcutBuscaDesc: string;
+    shortcutClipboardLabel: string;
+    shortcutClipboardDesc: string;
+    shortcutOlharTelaLabel: string;
+    shortcutOlharTelaDesc: string;
+    showMoreShortcuts: string;
+    showLessShortcuts: string;
     sectionFeedback: string;
     hintFeedback: string;
     labelFeedbackName: string;
@@ -143,7 +219,7 @@ interface Translations {
 
 const TRANSLATIONS: Record<string, Translations> = {
     pt: {
-        windowTitle: "MiiSideKick — Configurações (v1.6.0)",
+        windowTitle: "MiiSideKick — Configurações (v1.7.0)",
         headerTitle: "Configurações",
         headerSubtitle: "Personalize seu assistente local.",
         sectionLanguage: "Idioma / Language",
@@ -198,12 +274,29 @@ const TRANSLATIONS: Record<string, Translations> = {
         },
         sectionStartup: "Inicialização do Sistema",
         checkAutostart: "Iniciar junto com o Windows",
-        sectionGadget: "Gadget de Área de Trabalho",
-        checkGadget: "Ativar Gadget na Área de Trabalho (monitor translúcido de CPU/RAM com atalhos)",
-        btnResetGadget: "Redefinir Posição do Gadget",
+        sectionTrayTitle: "Personalizar Menu da Barra de Tarefas",
+        hintTray: "Escolha quais itens opcionais devem aparecer no menu ao clicar com o botão direito no ícone da bandeja.",
+        spanTrayPergunta: "Conversar com o Mii",
+        spanTrayHistorico: "Últimas Mensagens da IA",
+        spanTrayClipboard: "Histórico de Copiar (Clipboard)",
+        spanTrayTimer: "Novo Lembrete / Timer",
+        spanTrayOrganiza: "Organizar Arquivos",
+        spanTrayFaxina: "Limpar Lixo do PC",
+        spanTrayOtimizarRam: "Otimizar Memória RAM",
+        spanTrayBusca: "Buscar Arquivos no PC",
         sectionShortcuts: "Atalhos do Teclado",
         shortcutChatLabel: "Conversa Rápida com o Mii",
         shortcutChatDesc: "Abre a caixa de diálogo instantânea a partir de qualquer aplicativo.",
+        shortcutRadialLabel: "Menu Radial Rápido",
+        shortcutRadialDesc: "Abre o menu circular com ações instantâneas no cursor.",
+        shortcutBuscaLabel: "Busca Rápida de Arquivos",
+        shortcutBuscaDesc: "Localiza arquivos em Downloads, Documentos e Desktop instantaneamente.",
+        shortcutClipboardLabel: "Histórico do Clipboard",
+        shortcutClipboardDesc: "Abre o histórico de itens copiados recentemente para colar.",
+        shortcutOlharTelaLabel: "Inspecionar Tela (\"Olhar Tela\")",
+        shortcutOlharTelaDesc: "O Mii captura e analisa o conteúdo da sua tela atual com IA.",
+        showMoreShortcuts: "Mostrar mais atalhos",
+        showLessShortcuts: "Mostrar menos atalhos",
         sectionFeedback: "Enviar Feedback",
         hintFeedback: "Tem uma sugestão, encontrou um problema ou quer elogiar o projeto? Deixe sua mensagem!",
         labelFeedbackName: "Seu Nome / Apelido (opcional)",
@@ -232,7 +325,7 @@ const TRANSLATIONS: Record<string, Translations> = {
         tabTools: "Ferramentas & Feedback",
     },
     en: {
-        windowTitle: "MiiSideKick — Settings (v1.6.0)",
+        windowTitle: "MiiSideKick — Settings (v1.7.0)",
         headerTitle: "Settings",
         headerSubtitle: "Customize your desktop companion.",
         sectionLanguage: "Language / Idioma",
@@ -287,12 +380,29 @@ const TRANSLATIONS: Record<string, Translations> = {
         },
         sectionStartup: "System Startup",
         checkAutostart: "Start with Windows",
-        sectionGadget: "Desktop Gadget",
-        checkGadget: "Enable Desktop Gadget (translucent CPU/RAM monitor with quick actions)",
-        btnResetGadget: "Reset Gadget Position",
+        sectionTrayTitle: "Customize System Tray Menu",
+        hintTray: "Choose which optional items appear in the menu when right-clicking the tray icon.",
+        spanTrayPergunta: "Chat with Mii",
+        spanTrayHistorico: "Recent AI Messages",
+        spanTrayClipboard: "Clipboard History",
+        spanTrayTimer: "New Reminder / Timer",
+        spanTrayOrganiza: "Organize Files",
+        spanTrayFaxina: "Clean Junk Files",
+        spanTrayOtimizarRam: "Optimize RAM",
+        spanTrayBusca: "Search Local Files",
         sectionShortcuts: "Keyboard Shortcuts",
         shortcutChatLabel: "Quick Chat with Mii",
         shortcutChatDesc: "Opens the instant chat dialog from any application.",
+        shortcutRadialLabel: "Quick Radial Menu",
+        shortcutRadialDesc: "Opens the circular menu with instant actions at your cursor.",
+        shortcutBuscaLabel: "Quick File Search",
+        shortcutBuscaDesc: "Instantly finds files across Downloads, Documents, and Desktop.",
+        shortcutClipboardLabel: "Clipboard History",
+        shortcutClipboardDesc: "Opens recently copied items to paste anywhere.",
+        shortcutOlharTelaLabel: "Screen Inspection (\"Look at Screen\")",
+        shortcutOlharTelaDesc: "Mii captures and analyzes your current screen with AI.",
+        showMoreShortcuts: "Show more shortcuts",
+        showLessShortcuts: "Show fewer shortcuts",
         sectionFeedback: "Send Feedback",
         hintFeedback: "Have a suggestion, found a bug, or want to praise the project? Leave your message!",
         labelFeedbackName: "Your Name / Nickname (optional)",
@@ -466,10 +576,27 @@ function selecionarIdioma(idioma: string) {
     const spanAutostart = document.getElementById("spanAutostart");
     if (spanAutostart) spanAutostart.textContent = t.checkAutostart;
 
-    // Seção Gadget
-    if (sectionGadgetTitle) sectionGadgetTitle.textContent = t.sectionGadget;
-    if (spanGadgetAtivo) spanGadgetAtivo.textContent = t.checkGadget;
-    if (btnRedefinirPosicaoGadget) btnRedefinirPosicaoGadget.textContent = t.btnResetGadget;
+    // Seção Personalizar Bandeja
+    const sectionTrayTitle = document.getElementById("sectionTrayTitle");
+    if (sectionTrayTitle) sectionTrayTitle.textContent = t.sectionTrayTitle;
+    const hintTray = document.getElementById("hintTray");
+    if (hintTray) hintTray.textContent = t.hintTray;
+    const spanTrayPergunta = document.getElementById("spanTrayPergunta");
+    if (spanTrayPergunta) spanTrayPergunta.textContent = t.spanTrayPergunta;
+    const spanTrayHistorico = document.getElementById("spanTrayHistorico");
+    if (spanTrayHistorico) spanTrayHistorico.textContent = t.spanTrayHistorico;
+    const spanTrayClipboard = document.getElementById("spanTrayClipboard");
+    if (spanTrayClipboard) spanTrayClipboard.textContent = t.spanTrayClipboard;
+    const spanTrayTimer = document.getElementById("spanTrayTimer");
+    if (spanTrayTimer) spanTrayTimer.textContent = t.spanTrayTimer;
+    const spanTrayOrganiza = document.getElementById("spanTrayOrganiza");
+    if (spanTrayOrganiza) spanTrayOrganiza.textContent = t.spanTrayOrganiza;
+    const spanTrayFaxina = document.getElementById("spanTrayFaxina");
+    if (spanTrayFaxina) spanTrayFaxina.textContent = t.spanTrayFaxina;
+    const spanTrayOtimizarRam = document.getElementById("spanTrayOtimizarRam");
+    if (spanTrayOtimizarRam) spanTrayOtimizarRam.textContent = t.spanTrayOtimizarRam;
+    const spanTrayBusca = document.getElementById("spanTrayBusca");
+    if (spanTrayBusca) spanTrayBusca.textContent = t.spanTrayBusca;
 
     // Seção Atalhos
     const sectionShortcutsTitle = document.getElementById("sectionShortcutsTitle");
@@ -480,6 +607,35 @@ function selecionarIdioma(idioma: string) {
 
     const shortcutChatDesc = document.getElementById("shortcutChatDesc");
     if (shortcutChatDesc) shortcutChatDesc.textContent = t.shortcutChatDesc;
+
+    const shortcutRadialLabel = document.getElementById("shortcutRadialLabel");
+    if (shortcutRadialLabel) shortcutRadialLabel.textContent = t.shortcutRadialLabel;
+
+    const shortcutRadialDesc = document.getElementById("shortcutRadialDesc");
+    if (shortcutRadialDesc) shortcutRadialDesc.textContent = t.shortcutRadialDesc;
+
+    const shortcutBuscaLabel = document.getElementById("shortcutBuscaLabel");
+    if (shortcutBuscaLabel) shortcutBuscaLabel.textContent = t.shortcutBuscaLabel;
+
+    const shortcutBuscaDesc = document.getElementById("shortcutBuscaDesc");
+    if (shortcutBuscaDesc) shortcutBuscaDesc.textContent = t.shortcutBuscaDesc;
+
+    const shortcutClipboardLabel = document.getElementById("shortcutClipboardLabel");
+    if (shortcutClipboardLabel) shortcutClipboardLabel.textContent = t.shortcutClipboardLabel;
+
+    const shortcutClipboardDesc = document.getElementById("shortcutClipboardDesc");
+    if (shortcutClipboardDesc) shortcutClipboardDesc.textContent = t.shortcutClipboardDesc;
+
+    const shortcutOlharTelaLabel = document.getElementById("shortcutOlharTelaLabel");
+    if (shortcutOlharTelaLabel) shortcutOlharTelaLabel.textContent = t.shortcutOlharTelaLabel;
+
+    const shortcutOlharTelaDesc = document.getElementById("shortcutOlharTelaDesc");
+    if (shortcutOlharTelaDesc) shortcutOlharTelaDesc.textContent = t.shortcutOlharTelaDesc;
+
+    atualizarRotuloToggleShortcuts();
+
+    const keySpaceBadge = document.getElementById("keySpaceBadge");
+    if (keySpaceBadge) keySpaceBadge.textContent = idiomaAtual === "en" ? "Space" : "Espaço";
 
     // Seção Tutorial
     const tutorialLabel = document.getElementById("tutorialLabel");
@@ -537,10 +693,8 @@ function selecionarIdioma(idioma: string) {
     if (sectionAvatarTitle) {
         sectionAvatarTitle.textContent = idiomaAtual === "en" ? "Mascot Appearance" : "Aparência do Mascote";
     }
-    const btnAvatarClassico = document.getElementById("btnAvatarClassico");
-    if (btnAvatarClassico) btnAvatarClassico.textContent = idiomaAtual === "en" ? "Classic" : "Clássico";
-    const btnAvatarNostalgico = document.getElementById("btnAvatarNostalgico");
-    if (btnAvatarNostalgico) btnAvatarNostalgico.textContent = idiomaAtual === "en" ? "Nostalgic" : "Nostálgico";
+    const btnAvatarPadrao = document.getElementById("btnAvatarPadrao");
+    if (btnAvatarPadrao) btnAvatarPadrao.textContent = idiomaAtual === "en" ? "Default" : "Padrão";
     const btnAvatarCustom = document.getElementById("btnAvatarCustom");
     if (btnAvatarCustom) btnAvatarCustom.textContent = idiomaAtual === "en" ? "Custom" : "Personalizado";
     const hintCustomAvatar = document.getElementById("hintCustomAvatar");
@@ -557,7 +711,14 @@ function selecionarIdioma(idioma: string) {
     // Seção Organizador de Arquivos
     const sectionOrganizadorTitle = document.getElementById("sectionOrganizadorTitle");
     if (sectionOrganizadorTitle) {
-        sectionOrganizadorTitle.textContent = idiomaAtual === "en" ? "File Organizer" : "Organizador de Arquivos";
+        sectionOrganizadorTitle.textContent = idiomaAtual === "en" ? "Configure Organizer Rules" : "Configurar Regras do Organizador";
+    }
+    const badgeAccordion = document.getElementById("badgeAccordionOrganizador");
+    const accordionEl = document.getElementById("accordionOrganizador") as HTMLDetailsElement | null;
+    if (badgeAccordion && accordionEl) {
+        badgeAccordion.textContent = accordionEl.open
+            ? (idiomaAtual === "en" ? "Collapse" : "Recolher")
+            : (idiomaAtual === "en" ? "Expand" : "Expandir");
     }
     const hintOrganizador = document.getElementById("hintOrganizador");
     if (hintOrganizador) {
@@ -678,33 +839,58 @@ const btnAbrirPastaAvatar = document.getElementById("btnAbrirPastaAvatar");
 const btnRecarregarAvatar = document.getElementById("btnRecarregarAvatar");
 const statusAvatarMsg = document.getElementById("statusAvatarMsg");
 
-async function atualizarStatusAvatarVisual() {
+async function atualizarStatusAvatarVisual(mostrarCarregando = false) {
     if (!statusAvatarMsg) return;
+    const isEn = idiomaAtual === "en";
+
+    if (mostrarCarregando) {
+        statusAvatarMsg.style.display = "flex";
+        statusAvatarMsg.className = "aero-status-msg aero-status-pending";
+        statusAvatarMsg.innerHTML = `
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="spin-icon" style="animation: spinUpdate 0.8s linear infinite; flex-shrink: 0;"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+            <span>${isEn ? "Checking folder..." : "Verificando pasta..."}</span>
+        `;
+        await new Promise((r) => setTimeout(r, 200));
+    }
+
     try {
         const st = await invoke<StatusAvatarResult>("obter_status_avatar_customizado");
-        const isEn = idiomaAtual === "en";
-        statusAvatarMsg.style.display = "block";
+        statusAvatarMsg.style.display = "flex";
+
         if (st.imagens_encontradas === 0) {
             statusAvatarMsg.className = "aero-status-msg aero-status-pending";
-            statusAvatarMsg.textContent = isEn
-                ? "Folder is empty. Please place your images."
-                : "Pasta vazia. Coloque suas imagens na pasta.";
+            statusAvatarMsg.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: #2d6894;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                <span>${isEn ? "Folder is empty. Add your image sprites (e.g. normal.png) here." : "Pasta vazia. Adicione seus sprites de imagens (ex: normal.png) nesta pasta."}</span>
+            `;
         } else if (st.usa_fallback_estatico) {
             statusAvatarMsg.className = "aero-status-msg aero-status-success";
-            statusAvatarMsg.textContent = isEn
-                ? `${st.imagens_encontradas} image(s) found (static fallback active).`
-                : `${st.imagens_encontradas} imagem(ns) encontrada(s) (modo estático ativo).`;
+            statusAvatarMsg.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: #167a52;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span>${isEn ? `${st.imagens_encontradas} valid sprite(s) found. Single-image fallback active for remaining reactions.` : `${st.imagens_encontradas} sprite(s) válido(s) encontrado(s). Fallback de imagem única ativo para as reações restantes.`}</span>
+            `;
         } else {
             statusAvatarMsg.className = "aero-status-msg aero-status-success";
-            statusAvatarMsg.textContent = isEn
-                ? "All 8 emotions found! Full set ready."
-                : "Todas as 8 emoções encontradas! Kit completo pronto.";
+            statusAvatarMsg.innerHTML = `
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; color: #167a52;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                <span>${isEn ? "All 8 emotions found! Full custom avatar set is active." : "Todas as 8 emoções encontradas! Kit completo de avatares ativo."}</span>
+            `;
         }
-    } catch {}
+    } catch {
+        statusAvatarMsg.className = "aero-status-msg aero-status-error";
+        statusAvatarMsg.innerHTML = `
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+            <span>${isEn ? "Failed to verify avatar folder." : "Erro ao verificar pasta do avatar."}</span>
+        `;
+    }
 }
 
 function selecionarModoAvatar(modo: string) {
-    avatarModoAtual = modo || "classico";
+    let modoSanitizado = modo || "padrao";
+    if (modoSanitizado === "classico" || modoSanitizado === "nostalgico") {
+        modoSanitizado = "padrao";
+    }
+    avatarModoAtual = modoSanitizado;
     avatarButtons.forEach((btn) => {
         if (btn.getAttribute("data-avatar-mode") === avatarModoAtual) {
             btn.classList.add("active");
@@ -724,7 +910,7 @@ function selecionarModoAvatar(modo: string) {
 
 avatarButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
-        const m = btn.getAttribute("data-avatar-mode") || "classico";
+        const m = btn.getAttribute("data-avatar-mode") || "padrao";
         selecionarModoAvatar(m);
     });
 });
@@ -738,7 +924,7 @@ btnAbrirPastaAvatar?.addEventListener("click", async () => {
 });
 
 btnRecarregarAvatar?.addEventListener("click", () => {
-    atualizarStatusAvatarVisual();
+    atualizarStatusAvatarVisual(true);
 });
 
 // Ícones SVG para o botão de visualização da chave de API
@@ -846,11 +1032,41 @@ async function carregarDadosDoPC() {
             if (config.avatar_modo) {
                 selecionarModoAvatar(config.avatar_modo);
             } else {
-                selecionarModoAvatar("classico");
+                selecionarModoAvatar("padrao");
             }
-            if (checkGadgetAtivo) {
-                checkGadgetAtivo.checked = config.gadget_ativo === true;
-            }
+
+            // Personalização dos itens da bandeja
+            const trayItens = config.tray_itens_visiveis ?? [
+                "pergunta",
+                "historico",
+                "clipboard",
+                "timer",
+                "organiza",
+                "faxina",
+                "otimizar_ram",
+                "busca"
+            ];
+            if (checkTrayPergunta) checkTrayPergunta.checked = trayItens.includes("pergunta");
+            if (checkTrayHistorico) checkTrayHistorico.checked = trayItens.includes("historico");
+            if (checkTrayClipboard) checkTrayClipboard.checked = trayItens.includes("clipboard");
+            if (checkTrayTimer) checkTrayTimer.checked = trayItens.includes("timer");
+            if (checkTrayOrganiza) checkTrayOrganiza.checked = trayItens.includes("organiza");
+            if (checkTrayFaxina) checkTrayFaxina.checked = trayItens.includes("faxina");
+            if (checkTrayOtimizarRam) checkTrayOtimizarRam.checked = trayItens.includes("otimizar_ram");
+            if (checkTrayBusca) checkTrayBusca.checked = trayItens.includes("busca");
+
+            // Atalhos Globais
+            if (checkAtalhoRadial) checkAtalhoRadial.checked = config.atalho_radial !== false;
+            if (checkAtalhoChat) checkAtalhoChat.checked = config.atalho_chat !== false;
+            if (checkAtalhoBusca) checkAtalhoBusca.checked = config.atalho_busca !== false;
+            if (checkAtalhoClipboard) checkAtalhoClipboard.checked = config.atalho_clipboard !== false;
+            if (checkAtalhoOlharTela) checkAtalhoOlharTela.checked = config.atalho_olhar_tela !== false;
+
+            atualizarVisualAtalhoCard(checkAtalhoRadial, cardAtalhoRadial);
+            atualizarVisualAtalhoCard(checkAtalhoChat, cardAtalhoChat);
+            atualizarVisualAtalhoCard(checkAtalhoBusca, cardAtalhoBusca);
+            atualizarVisualAtalhoCard(checkAtalhoClipboard, cardAtalhoClipboard);
+            atualizarVisualAtalhoCard(checkAtalhoOlharTela, cardAtalhoOlharTela);
         } else {
             selecionarIdioma("pt");
         }
@@ -955,6 +1171,8 @@ if (feedbackForm) {
     });
 }
 
+let updateMsgTimeout: number | null = null;
+
 // Configura a verificação manual de atualizações
 if (btnCheckUpdates) {
     btnCheckUpdates.addEventListener("click", async () => {
@@ -964,25 +1182,42 @@ if (btnCheckUpdates) {
         if (labelCheckUpdates) labelCheckUpdates.textContent = t.btnCheckingUpdates;
 
         if (updateStatusMsg) {
+            if (updateMsgTimeout) clearTimeout(updateMsgTimeout);
             updateStatusMsg.style.display = "none";
+            updateStatusMsg.classList.remove("fade-out");
             updateStatusMsg.className = "update-status-msg";
         }
 
         try {
             const result = await invoke<UpdateCheckResult>("verificar_atualizacoes_manual");
             if (updateStatusMsg) {
+                if (updateMsgTimeout) clearTimeout(updateMsgTimeout);
                 updateStatusMsg.textContent = result.mensagem;
                 updateStatusMsg.className = result.tem_atualizacao
                     ? "update-status-msg available"
                     : "update-status-msg latest";
                 updateStatusMsg.style.display = "block";
+                updateStatusMsg.classList.remove("fade-out");
+
+                // Se já estiver na versão mais recente, desaparece suavemente após 4 segundos
+                if (!result.tem_atualizacao) {
+                    updateMsgTimeout = window.setTimeout(() => {
+                        updateStatusMsg.classList.add("fade-out");
+                        updateMsgTimeout = window.setTimeout(() => {
+                            updateStatusMsg.style.display = "none";
+                            updateStatusMsg.classList.remove("fade-out");
+                        }, 500);
+                    }, 4000);
+                }
             }
         } catch (err) {
             console.error("Erro ao verificar atualizações:", err);
             if (updateStatusMsg) {
+                if (updateMsgTimeout) clearTimeout(updateMsgTimeout);
                 updateStatusMsg.textContent = String(err);
                 updateStatusMsg.className = "update-status-msg error";
                 updateStatusMsg.style.display = "block";
+                updateStatusMsg.classList.remove("fade-out");
             }
         } finally {
             btnCheckUpdates.disabled = false;
@@ -1047,6 +1282,16 @@ if (btnSalvar) {
         const limiteFinal = Math.max(30, Math.min(500, parseInt(inputLimite?.value || "70", 10) || 70));
         const defaultName = idiomaAtual === "en" ? "User" : "Usuário";
 
+        const trayItensVisiveis: string[] = [];
+        if (checkTrayPergunta?.checked) trayItensVisiveis.push("pergunta");
+        if (checkTrayHistorico?.checked) trayItensVisiveis.push("historico");
+        if (checkTrayClipboard?.checked) trayItensVisiveis.push("clipboard");
+        if (checkTrayTimer?.checked) trayItensVisiveis.push("timer");
+        if (checkTrayOrganiza?.checked) trayItensVisiveis.push("organiza");
+        if (checkTrayFaxina?.checked) trayItensVisiveis.push("faxina");
+        if (checkTrayOtimizarRam?.checked) trayItensVisiveis.push("otimizar_ram");
+        if (checkTrayBusca?.checked) trayItensVisiveis.push("busca");
+
         // Salva as configurações completas no Rust
         try {
             await invoke("salvar_configuracoes", {
@@ -1061,7 +1306,12 @@ if (btnSalvar) {
                     idioma: idiomaAtual,
                     gostos_usuario: userInterests?.value?.trim() || "",
                     avatar_modo: avatarModoAtual,
-                    gadget_ativo: checkGadgetAtivo ? checkGadgetAtivo.checked : false,
+                    tray_itens_visiveis: trayItensVisiveis,
+                    atalho_radial: checkAtalhoRadial ? checkAtalhoRadial.checked : true,
+                    atalho_chat: checkAtalhoChat ? checkAtalhoChat.checked : true,
+                    atalho_busca: checkAtalhoBusca ? checkAtalhoBusca.checked : true,
+                    atalho_clipboard: checkAtalhoClipboard ? checkAtalhoClipboard.checked : true,
+                    atalho_olhar_tela: checkAtalhoOlharTela ? checkAtalhoOlharTela.checked : true,
                 }
             });
         } catch (error) {
@@ -1084,23 +1334,15 @@ if (btnSalvar) {
     });
 }
 
-// Ações do Gadget de Desktop
-if (checkGadgetAtivo) {
-    checkGadgetAtivo.addEventListener("change", async () => {
-        try {
-            await invoke("alternar_gadget", { ativo: checkGadgetAtivo.checked });
-        } catch (e) {
-            console.error("Erro ao alternar gadget:", e);
-        }
-    });
-}
-
-if (btnRedefinirPosicaoGadget) {
-    btnRedefinirPosicaoGadget.addEventListener("click", async () => {
-        try {
-            await invoke("redefinir_posicao_gadget");
-        } catch (e) {
-            console.error("Erro ao redefinir posição do gadget:", e);
+// Controle do Accordion de Regras do Organizador
+const accordionOrganizador = document.getElementById("accordionOrganizador") as HTMLDetailsElement | null;
+if (accordionOrganizador) {
+    accordionOrganizador.addEventListener("toggle", () => {
+        const badge = document.getElementById("badgeAccordionOrganizador");
+        if (badge) {
+            badge.textContent = accordionOrganizador.open
+                ? (idiomaAtual === "en" ? "Collapse" : "Recolher")
+                : (idiomaAtual === "en" ? "Expand" : "Expandir");
         }
     });
 }

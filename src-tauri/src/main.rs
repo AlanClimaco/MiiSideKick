@@ -7,6 +7,7 @@ mod clipboard;
 mod organizador;
 mod avatar;
 mod captura;
+mod busca;
 
 use tauri::{
     menu::{Menu, MenuItem},
@@ -17,6 +18,7 @@ use tauri::{
 pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>, tauri::Error> {
     let cfg = comandos::carregar_configuracoes();
     let is_en = cfg.idioma == "en";
+    let visiveis = &cfg.tray_itens_visiveis;
 
     let show_i = MenuItem::with_id(
         app,
@@ -25,57 +27,98 @@ pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>
         true,
         None::<&str>,
     )?;
-    let pergunta_i = MenuItem::with_id(
-        app,
-        "pergunta",
-        if is_en { "Chat with Mii" } else { "Conversar com o Mii" },
-        true,
-        None::<&str>,
-    )?;
 
-    let historico_i = MenuItem::with_id(
-        app,
-        "historico",
-        if is_en { "Recent AI Messages" } else { "Últimas Mensagens da IA" },
-        true,
-        None::<&str>,
-    )?;
+    let mut items: Vec<Box<dyn tauri::menu::IsMenuItem<tauri::Wry>>> = Vec::new();
+    items.push(Box::new(show_i));
 
-    let clipboard_i = MenuItem::with_id(
-        app,
-        "clipboard",
-        if is_en { "Clipboard History" } else { "Histórico de Copiar" },
-        true,
-        None::<&str>,
-    )?;
-    let timer_i = MenuItem::with_id(
-        app,
-        "timer",
-        if is_en { "New Reminder" } else { "Novo Lembrete" },
-        true,
-        None::<&str>,
-    )?;
-    let organiza_i = MenuItem::with_id(
-        app,
-        "organiza",
-        if is_en { "Organize Files" } else { "Organizar Arquivos" },
-        true,
-        None::<&str>,
-    )?;
-    let faxina_i = MenuItem::with_id(
-        app,
-        "faxina",
-        if is_en { "Clean Junk Files" } else { "Limpar Lixo do PC" },
-        true,
-        None::<&str>,
-    )?;
-    let otimizar_ram_i = MenuItem::with_id(
-        app,
-        "otimizar_ram",
-        if is_en { "Optimize RAM" } else { "Otimizar RAM" },
-        true,
-        None::<&str>,
-    )?;
+    if visiveis.contains(&"pergunta".to_string()) {
+        let pergunta_i = MenuItem::with_id(
+            app,
+            "pergunta",
+            if is_en { "Chat with Mii" } else { "Conversar com o Mii" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(pergunta_i));
+    }
+
+    if visiveis.contains(&"historico".to_string()) {
+        let historico_i = MenuItem::with_id(
+            app,
+            "historico",
+            if is_en { "Recent AI Messages" } else { "Últimas Mensagens da IA" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(historico_i));
+    }
+
+    if visiveis.contains(&"clipboard".to_string()) {
+        let clipboard_i = MenuItem::with_id(
+            app,
+            "clipboard",
+            if is_en { "Clipboard History" } else { "Histórico de Copiar" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(clipboard_i));
+    }
+
+    if visiveis.contains(&"timer".to_string()) {
+        let timer_i = MenuItem::with_id(
+            app,
+            "timer",
+            if is_en { "New Reminder" } else { "Novo Lembrete" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(timer_i));
+    }
+
+    if visiveis.contains(&"organiza".to_string()) {
+        let organiza_i = MenuItem::with_id(
+            app,
+            "organiza",
+            if is_en { "Organize Files" } else { "Organizar Arquivos" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(organiza_i));
+    }
+
+    if visiveis.contains(&"faxina".to_string()) {
+        let faxina_i = MenuItem::with_id(
+            app,
+            "faxina",
+            if is_en { "Clean Junk Files" } else { "Limpar Lixo do PC" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(faxina_i));
+    }
+
+    if visiveis.contains(&"otimizar_ram".to_string()) {
+        let otimizar_ram_i = MenuItem::with_id(
+            app,
+            "otimizar_ram",
+            if is_en { "Optimize RAM" } else { "Otimizar RAM" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(otimizar_ram_i));
+    }
+
+    if visiveis.contains(&"busca".to_string()) {
+        let busca_i = MenuItem::with_id(
+            app,
+            "busca",
+            if is_en { "Search Files" } else { "Buscar Arquivos" },
+            true,
+            None::<&str>,
+        )?;
+        items.push(Box::new(busca_i));
+    }
+
     let quit_i = MenuItem::with_id(
         app,
         "quit",
@@ -83,21 +126,10 @@ pub fn construir_menu_bandeja(app: &tauri::AppHandle) -> Result<Menu<tauri::Wry>
         true,
         None::<&str>,
     )?;
+    items.push(Box::new(quit_i));
 
-    Menu::with_items(
-        app,
-        &[
-            &show_i,
-            &pergunta_i,
-            &historico_i,
-            &clipboard_i,
-            &timer_i,
-            &organiza_i,
-            &faxina_i,
-            &otimizar_ram_i,
-            &quit_i,
-        ],
-    )
+    let refs: Vec<&dyn tauri::menu::IsMenuItem<tauri::Wry>> = items.iter().map(|i| i.as_ref()).collect();
+    Menu::with_items(app, &refs)
 }
 
 pub fn atualizar_menu_bandeja(app: &tauri::AppHandle) {
@@ -105,6 +137,29 @@ pub fn atualizar_menu_bandeja(app: &tauri::AppHandle) {
         if let Ok(menu) = construir_menu_bandeja(app) {
             let _ = tray.set_menu(Some(menu));
         }
+    }
+}
+
+pub fn atualizar_atalhos_globais(app: &tauri::AppHandle, config: &comandos::AppConfig) {
+    use tauri_plugin_global_shortcut::GlobalShortcutExt;
+
+    // Desregistra todos os atalhos antes de registrar os ativos
+    let _ = app.global_shortcut().unregister_all();
+
+    if config.atalho_radial {
+        let _ = app.global_shortcut().register("ctrl+shift+space");
+    }
+    if config.atalho_chat {
+        let _ = app.global_shortcut().register("ctrl+shift+m");
+    }
+    if config.atalho_busca {
+        let _ = app.global_shortcut().register("ctrl+shift+f");
+    }
+    if config.atalho_clipboard {
+        let _ = app.global_shortcut().register("ctrl+shift+v");
+    }
+    if config.atalho_olhar_tela {
+        let _ = app.global_shortcut().register("ctrl+shift+s");
     }
 }
 
@@ -123,15 +178,24 @@ fn main() {
         .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
-                .with_shortcut("ctrl+shift+m")
-                .expect("Erro ao registrar atalho global Ctrl+Shift+M")
-                .with_handler(|app, _shortcut, event| {
+                .with_handler(|app, shortcut, event| {
                     if event.state() == tauri_plugin_global_shortcut::ShortcutState::Pressed {
-                        comandos::limpar_historico_conversa();
-                        if let Some(window) = app.get_webview_window("pergunta") {
-                            let _ = window.show();
-                            let _ = window.unminimize();
-                            let _ = window.set_focus();
+                        let sc_str = shortcut.to_string().to_lowercase();
+                        if sc_str.contains("space") {
+                            comandos::abrir_radial(app.clone());
+                        } else if sc_str.contains("keym") {
+                            comandos::limpar_historico_conversa();
+                            if let Some(window) = app.get_webview_window("pergunta") {
+                                let _ = window.show();
+                                let _ = window.unminimize();
+                                let _ = window.set_focus();
+                            }
+                        } else if sc_str.contains("keyf") {
+                            busca::abrir_busca(app.clone());
+                        } else if sc_str.contains("keyv") {
+                            clipboard::abrir_clipboard(app.clone());
+                        } else if sc_str.contains("keys") {
+                            comandos::analisar_tela_com_ia(app.clone(), None);
                         }
                     }
                 })
@@ -142,7 +206,11 @@ fn main() {
             comandos::esconder_janela,
             comandos::esconder_popup,
             comandos::esconder_timer,
+            comandos::abrir_timer,
+            comandos::abrir_configuracoes,
             comandos::esconder_pergunta,
+            comandos::esconder_radial,
+            comandos::abrir_radial,
             comandos::limpar_lixo_pc,
             comandos::pegar_dados_notificacao,
             comandos::organizar_downloads,
@@ -172,10 +240,12 @@ fn main() {
             avatar::abrir_pasta_avatar_customizado,
             comandos::analisar_tela_com_ia,
             comandos::copiar_detalhes_ia,
-            comandos::obter_telemetria_rapida,
-            comandos::salvar_posicao_gadget,
-            comandos::alternar_gadget,
-            comandos::redefinir_posicao_gadget
+            busca::procurar_arquivos_locais,
+            busca::abrir_pasta_com_arquivo,
+            busca::abrir_busca,
+            busca::abrir_busca_com_termo,
+            busca::obter_termo_pre_pesquisa,
+            busca::esconder_busca
         ])
         .setup(|app| {
             // Inicializa pasta e README de avatar customizado
@@ -187,6 +257,10 @@ fn main() {
             // Inicializa o monitoramento contínuo do clipboard
             clipboard::iniciar_monitor_clipboard();
 
+            // Registra os atalhos globais ativos do usuário
+            let cfg = comandos::carregar_configuracoes();
+            atualizar_atalhos_globais(&app.handle(), &cfg);
+
             // JANELA POPUP (NOTIFICAÇÕES)
 
             #[cfg(debug_assertions)]
@@ -197,7 +271,7 @@ fn main() {
             let popup_url = WebviewUrl::App("notificacao.html".into());
 
             let popup_window = WebviewWindowBuilder::new(app, "popup", popup_url)
-                .inner_size(420.0, 240.0)
+                .inner_size(430.0, 360.0)
                 .decorations(false)
                 .transparent(true)
                 .resizable(false)
@@ -214,7 +288,7 @@ fn main() {
                 let size = monitor.size();
                 let window_size = popup_window
                     .outer_size()
-                    .unwrap_or(tauri::PhysicalSize::new(420, 240));
+                    .unwrap_or(tauri::PhysicalSize::new(430, 360));
                 let x = size.width.saturating_sub(window_size.width + 20);
                 let y = size.height.saturating_sub(window_size.height + 60);
                 let _ = popup_window.set_position(tauri::PhysicalPosition::new(x, y));
@@ -352,41 +426,28 @@ fn main() {
                 let _ = historico_window.set_position(tauri::PhysicalPosition::new(x, y));
             }
 
-            // JANELA GADGET (DESKTOP WIDGET TRANSLÚCIDO ESTILO WINDOWS 7)
+            // JANELA RADIAL (PIE MENU FLUTUANTE)
 
             #[cfg(debug_assertions)]
-            let gadget_url = WebviewUrl::External(
-                tauri::Url::parse("http://localhost:1420/gadget.html").unwrap(),
+            let radial_url = WebviewUrl::External(
+                tauri::Url::parse("http://localhost:1420/radial.html").unwrap(),
             );
             #[cfg(not(debug_assertions))]
-            let gadget_url = WebviewUrl::App("gadget.html".into());
+            let radial_url = WebviewUrl::App("radial.html".into());
 
-            let cfg_gadget = comandos::carregar_configuracoes();
-
-            let gadget_window = WebviewWindowBuilder::new(
-                app, "gadget",
-                gadget_url,
+            let _radial_window = WebviewWindowBuilder::new(
+                app, "radial",
+                radial_url,
             )
-            .inner_size(220.0, 180.0)
+            .inner_size(380.0, 380.0)
             .decorations(false)
             .transparent(true)
             .resizable(false)
             .shadow(false)
+            .always_on_top(true)
             .skip_taskbar(true)
-            .visible(cfg_gadget.gadget_ativo)
+            .visible(false)
             .build()?;
-
-            if let (Some(gx), Some(gy)) = (cfg_gadget.gadget_x, cfg_gadget.gadget_y) {
-                let _ = gadget_window.set_position(tauri::PhysicalPosition::new(gx, gy));
-            } else if let Ok(Some(monitor)) = gadget_window.primary_monitor() {
-                let size = monitor.size();
-                let window_size = gadget_window
-                    .outer_size()
-                    .unwrap_or(tauri::PhysicalSize::new(220, 180));
-                let x = size.width.saturating_sub(window_size.width + 30);
-                let y = 60;
-                let _ = gadget_window.set_position(tauri::PhysicalPosition::new(x, y));
-            }
 
             // CONFIGURAÇÃO DA BANDEJA DO SISTEMA
             let menu = construir_menu_bandeja(app.handle())?;
@@ -432,12 +493,25 @@ fn main() {
                         "faxina" => comandos::limpar_lixo_pc(app.clone()),
                         "organiza" => comandos::organizar_downloads(app.clone()),
                         "otimizar_ram" => comandos::limpar_cache_ram(app.clone()),
+                        "busca" => busca::abrir_busca(app.clone()),
                         _ => {}
                     }
                 })
                 .build(app)?;
 
-                if let Some(main_window) = app.get_webview_window("main") {
+            if let Some(busca_window) = app.get_webview_window("busca") {
+                if let Ok(Some(monitor)) = busca_window.primary_monitor() {
+                    let size = monitor.size();
+                    let window_size = busca_window
+                        .outer_size()
+                        .unwrap_or(tauri::PhysicalSize::new(380, 460));
+                    let x = size.width.saturating_sub(window_size.width + 20);
+                    let y = size.height.saturating_sub(window_size.height + 60);
+                    let _ = busca_window.set_position(tauri::PhysicalPosition::new(x, y));
+                }
+            }
+
+            if let Some(main_window) = app.get_webview_window("main") {
                 let args: Vec<String> = std::env::args().collect();
                 
                 if !args.contains(&"--autostart".to_string()) {

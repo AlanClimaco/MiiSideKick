@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Busca Rápida de Arquivos</title>
+    <link rel="stylesheet" href="/src/css/global.css" />
+    <link rel="stylesheet" href="/src/css/busca.css" />
+</head>
+<body class="busca-body">
+    <div class="glass-card busca-card">
+        <!-- Cabeçalho Frutiger Aero -->
+        <div class="busca-header">
+            <div class="header-left">
+                <img src="/src/assets/reacoes/mii-normal.png" alt="Mii" class="busca-avatar" id="buscaAvatar">
+                <div class="header-text">
+                    <h3 class="busca-title" id="buscaTitle">Busca de Arquivos</h3>
+                    <span class="busca-subtitle" id="buscaSubtitle">Downloads, Documentos e Desktop</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="btn-fechar" id="btnFechar" type="button" title="Fechar" aria-label="Fechar busca">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="m4 4 8 8M12 4l-8 8"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Barra de Busca -->
+        <div class="busca-input-container">
+            <div class="busca-input-wrapper">
+                <svg class="busca-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input 
+                    type="text" 
+                    id="inputBusca" 
+                    class="busca-input" 
+                    placeholder="Digite o nome do arquivo..." 
+                    autocomplete="off"
+                    spellcheck="false"
+                />
+            </div>
+            <button class="btn-buscar" id="btnBuscar" type="button" title="Buscar" aria-label="Buscar arquivos">
+                <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+            </button>
+        </div>
+
+        <!-- Barra de Status e Preferência -->
+        <div class="busca-toolbar">
+            <span class="busca-status" id="buscaStatus">Pronto para buscar</span>
+            <label class="busca-opcao-fechar" for="checkFecharAoSair" title="Fechar janela automaticamente ao clicar em um arquivo">
+                <input type="checkbox" id="checkFecharAoSair" checked />
+                <span id="labelFecharAoSair">Fechar ao abrir</span>
+            </label>
+        </div>
+
+        <!-- Lista de Resultados com Rolagem Suave -->
+        <div class="busca-list" id="buscaList">
+            <!-- Cards de arquivos gerados via TypeScript -->
+        </div>
+
+        <!-- Estado Vazio / Inicial -->
+        <div class="busca-empty" id="buscaEmpty">
+            <svg class="busca-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <p id="emptyMessage">Digite o nome ou extensão para localizar arquivos.</p>
+        </div>
+
+        <!-- Estado de Carregamento -->
+        <div class="busca-loading" id="buscaLoading" style="display: none;">
+            <div class="spinner"></div>
+            <span id="loadingMessage">Procurando arquivos...</span>
+        </div>
+    </div>
+
+    <script type="module" src="/src/busca/busca.ts"></script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Menu Radial</title>
+    <link rel="stylesheet" href="/src/css/global.css" />
+    <link rel="stylesheet" href="/src/css/radial.css" />
+</head>
+<body class="radial-body">
+    <div class="radial-menu" id="radialMenu" role="menu" aria-label="Menu Radial de Ações Rápidas">
+        <!-- 1. Topo (Norte): Organizar Downloads -->
+        <button class="radial-item pos-n" id="btnOrganizar" type="button" role="menuitem" title="Organizar Downloads">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>
+                <path d="M12 11v6"/>
+                <path d="m9 14 3 3 3-3"/>
+            </svg>
+            <span class="radial-label" id="labelOrganizar">Organizar Downloads</span>
+        </button>
+
+        <!-- 2. Nordeste-Alto: Otimizar RAM -->
+        <button class="radial-item pos-ne" id="btnOtimizarRAM" type="button" role="menuitem" title="Otimizar RAM">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+            <span class="radial-label" id="labelOtimizarRAM">Otimizar RAM</span>
+        </button>
+
+        <!-- 3. Leste (Direita): Esvaziar Lixeira -->
+        <button class="radial-item pos-e" id="btnLimparLixo" type="button" role="menuitem" title="Esvaziar Lixeira">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M3 6h18"/>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                <line x1="10" x2="10" y1="11" y2="17"/>
+                <line x1="14" x2="14" y1="11" y2="17"/>
+            </svg>
+            <span class="radial-label" id="labelLimparLixo">Esvaziar Lixeira</span>
+        </button>
+
+        <!-- 4. Sudeste: Novo Timer / Lembrete -->
+        <button class="radial-item pos-se" id="btnTimer" type="button" role="menuitem" title="Novo Lembrete">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="10"/>
+                <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span class="radial-label" id="labelTimer">Novo Lembrete</span>
+        </button>
+
+        <!-- 5. Sul-Direita (Base): Configurações / Setup -->
+        <button class="radial-item pos-s" id="btnSetup" type="button" role="menuitem" title="Configurações">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/>
+                <circle cx="12" cy="12" r="3"/>
+            </svg>
+            <span class="radial-label" id="labelSetup">Configurações</span>
+        </button>
+
+        <!-- 6. Sul-Esquerda: Conversar com o Mii -->
+        <button class="radial-item pos-sw" id="btnPergunta" type="button" role="menuitem" title="Conversar com o Mii">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 21 1.9-5.7a8.5 8.5 0 1 1 3.8 3.8z"/>
+            </svg>
+            <span class="radial-label" id="labelPergunta">Conversar com Mii</span>
+        </button>
+
+        <!-- 7. Sudoeste: Histórico do Clipboard -->
+        <button class="radial-item pos-w" id="btnClipboard" type="button" role="menuitem" title="Histórico do Clipboard">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <rect width="8" height="4" x="8" y="2" rx="1" ry="1"/>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                <path d="M9 12h6"/>
+                <path d="M9 16h6"/>
+            </svg>
+            <span class="radial-label" id="labelClipboard">Histórico Copiar</span>
+        </button>
+
+        <!-- 8. Noroeste: Histórico da IA -->
+        <button class="radial-item pos-nw" id="btnHistoricoIA" type="button" role="menuitem" title="Histórico da IA">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                <path d="m10 8 2 4 2-4"/>
+            </svg>
+            <span class="radial-label" id="labelHistoricoIA">Histórico da IA</span>
+        </button>
+
+        <!-- 9. Noroeste-Alto: Buscar Arquivos -->
+        <button class="radial-item pos-busca" id="btnBusca" type="button" role="menuitem" title="Buscar Arquivos">
+            <svg class="radial-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span class="radial-label" id="labelBusca">Buscar Arquivos</span>
+        </button>
+
+        <!-- Centro do Círculo: Hub Exclusivo com Botão Fechar (X) -->
+        <button class="center-hub" id="btnFecharRadial" type="button" title="Fechar Menu" aria-label="Fechar menu radial">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true">
+                <path d="m4 4 8 8M12 4l-8 8"/>
+            </svg>
+        </button>
+    </div>
+
+    <script type="module" src="/src/radial/radial.ts"></script>
+</body>
+</html>

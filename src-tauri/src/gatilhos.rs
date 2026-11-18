@@ -313,11 +313,6 @@ pub fn obter_curiosidade_proativa(
         )
     };
 
-    let url = format!(
-        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key={}",
-        api_key_trim
-    );
-
     let payload = serde_json::json!({
         "contents": [
             {
@@ -331,14 +326,11 @@ pub fn obter_curiosidade_proativa(
     });
 
     let client = reqwest::blocking::Client::builder()
-        .timeout(Duration::from_secs(6))
+        .timeout(Duration::from_secs(10))
         .build()
         .ok()?;
 
-    let res = client.post(&url).json(&payload).send().ok()?;
-    if !res.status().is_success() {
-        return None;
-    }
+    let res = crate::comandos::executar_requisicao_gemini_resiliente(&client, api_key_trim, &payload).ok()?;
 
     let val = res.json::<serde_json::Value>().ok()?;
     let raw_text = val["candidates"][0]["content"]["parts"][0]["text"].as_str()?;
@@ -432,11 +424,11 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                     }
                 }
 
-                // Comentário contextual pós-jogo / processo longo (~50% de chance)
+                // Comentário contextual pós-jogo / processo longo (respeita duração mínima de 20 min, cooldown e modo discreto)
                 let cfg_quick = comandos::carregar_configuracoes();
                 let is_en_quick = cfg_quick.idioma == "en";
                 if let Some(comentario) =
-                    crate::sistema::consumir_comentario_contextual_pos_jogo(is_en_quick)
+                    crate::sistema::consumir_comentario_contextual_pos_jogo(is_en_quick, &cfg_quick.frequencia_alertas)
                 {
                     eprintln!(
                         "[Sistema]: Disparando comentário contextual pós-jogo: {}",
@@ -632,6 +624,8 @@ pub fn iniciar_motor_proativo(app: AppHandle) {
                                     eh_reconsulta: false,
                                     timestamp: 0,
                                     hora_formatada: String::new(),
+                                    comando_executar: None,
+                                    comando_args: None,
                                 };
                                 crate::comandos::registrar_historico_ia(payload_historico);
                                 crate::atualizar_menu_bandeja(&app);
@@ -694,5 +688,25 @@ mod tests {
 
         // Chave fictícia / erro de autenticação ou rede deve retornar None
         assert_eq!(obter_curiosidade_proativa("chave_invalida_mock", 70, "hostil", "pt", ""), None);
+    }
+
+    #[test]
+    fn test_shortcut_comparison() {
+        use std::str::FromStr;
+        use tauri_plugin_global_shortcut::Shortcut;
+        let s_m = Shortcut::from_str("ctrl+shift+m").unwrap();
+        let s_space = Shortcut::from_str("ctrl+shift+space").unwrap();
+        let s_f = Shortcut::from_str("ctrl+shift+f").unwrap();
+        let s_v = Shortcut::from_str("ctrl+shift+v").unwrap();
+        let s_s = Shortcut::from_str("ctrl+shift+s").unwrap();
+
+        assert_eq!(s_m.to_string().to_lowercase(), "shift+control+keym");
+        assert_eq!(s_space.to_string().to_lowercase(), "shift+control+space");
+        assert_eq!(s_f.to_string().to_lowercase(), "shift+control+keyf");
+        assert_eq!(s_v.to_string().to_lowercase(), "shift+control+keyv");
+        assert_eq!(s_s.to_string().to_lowercase(), "shift+control+keys");
+
+        assert_eq!(s_m, Shortcut::from_str("ctrl+shift+m").unwrap());
+        assert_ne!(s_m, s_f);
     }
 }

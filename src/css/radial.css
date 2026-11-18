@@ -1,0 +1,191 @@
+.radial-body {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: transparent !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    color-scheme: light;
+}
+
+.radial-body * {
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.radial-menu {
+    position: relative;
+    width: 360px;
+    height: 360px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.88) 0%, rgba(225, 242, 255, 0.72) 50%, rgba(185, 220, 250, 0.78) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.9);
+    box-shadow:
+        0 14px 38px rgba(0, 30, 65, 0.32),
+        inset 0 1.5px 2px rgba(255, 255, 255, 0.95),
+        inset 0 -1.5px 2px rgba(70, 140, 210, 0.28);
+    display: block;
+    opacity: 1;
+}
+
+/* Itens / Fatias do Menu Radial */
+.radial-item {
+    position: absolute;
+    width: 74px;
+    height: 48px;
+    background: transparent;
+    border: 1px solid transparent;
+    outline: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 4px;
+    border-radius: 12px;
+    color: #1a3c5a;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    z-index: 2;
+}
+
+.radial-icon {
+    width: 20px;
+    height: 20px;
+    color: #1a4f78;
+    filter: drop-shadow(0 1px 1px rgba(255, 255, 255, 0.8));
+    transition: color 0.15s ease;
+}
+
+.radial-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 1.15;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.9);
+    letter-spacing: -0.2px;
+    white-space: nowrap;
+    max-width: 70px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Posicionamento estático das 9 posições distribuídas uniformemente a 40 graus */
+.pos-n {
+    left: 143px;
+    top: 31px;
+}
+
+.pos-ne {
+    left: 223px;
+    top: 60px;
+}
+
+.pos-e {
+    left: 266px;
+    top: 134px;
+}
+
+.pos-se {
+    left: 251px;
+    top: 219px;
+}
+
+.pos-s {
+    left: 186px;
+    top: 273px;
+}
+
+.pos-sw {
+    left: 100px;
+    top: 273px;
+}
+
+.pos-w {
+    left: 35px;
+    top: 219px;
+}
+
+.pos-nw {
+    left: 20px;
+    top: 134px;
+}
+
+.pos-busca {
+    left: 63px;
+    top: 60px;
+}
+
+/* Efeito Hover Sóbrio e Estático */
+.radial-item:hover {
+    background: rgba(255, 255, 255, 0.35);
+    border-color: rgba(255, 255, 255, 0.7);
+    box-shadow: 0 2px 8px rgba(0, 80, 160, 0.18), inset 0 1px 1px #ffffff;
+    color: #005a9e;
+}
+
+.radial-item:hover .radial-icon {
+    color: #0066cc;
+}
+
+.radial-item:active {
+    background: rgba(200, 230, 255, 0.5);
+    border-color: rgba(140, 190, 240, 0.6);
+    box-shadow: inset 0 1px 3px rgba(0, 50, 100, 0.2);
+}
+
+/* Hub Central Estático Exclusivo para Fechar (X) */
+.center-hub {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 50% 30%, rgba(255, 255, 255, 0.95) 0%, rgba(230, 242, 255, 0.82) 50%, rgba(190, 220, 245, 0.9) 100%);
+    border: 1.5px solid rgba(255, 255, 255, 0.95);
+    box-shadow:
+        0 3px 10px rgba(0, 30, 60, 0.25),
+        inset 0 1px 1px #ffffff,
+        inset 0 -1.5px 2px rgba(70, 130, 200, 0.35);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #3b5a75;
+    z-index: 10;
+    transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+    padding: 0;
+}
+
+.center-hub svg {
+    width: 16px;
+    height: 16px;
+}
+
+/* Hover do Hub Central: fundo avermelhado suave, sem rotação nem escala */
+.center-hub:hover {
+    background: rgba(235, 75, 75, 0.2);
+    border-color: rgba(235, 75, 75, 0.4);
+    color: #d32f2f;
+    box-shadow: 0 2px 8px rgba(210, 50, 50, 0.25), inset 0 1px 1px #ffffff;
+}
+
+.center-hub:active {
+    background: rgba(235, 75, 75, 0.35);
+    box-shadow: inset 0 1px 3px rgba(180, 30, 30, 0.3);
+}
+
+.radial-body button:focus-visible {
+    outline: 2px solid #2672ec;
+    outline-offset: 1px;
+}

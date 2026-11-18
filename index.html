@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>MiiSideKick — Configurações (v1.6.1)</title>
+    <title>MiiSideKick — Configurações (v1.7.0)</title>
     <link rel="stylesheet" href="/src/css/global.css" />
     <link rel="stylesheet" href="/src/css/setup.css" />
   </head>
@@ -68,11 +68,8 @@
           <section class="setup-section">
             <div class="section-title" id="sectionAvatarTitle">Aparência do Mascote</div>
             <div class="personality-presets" style="margin-bottom: 8px;">
-              <button type="button" class="avatar-mode-btn active" data-avatar-mode="classico" id="btnAvatarClassico">
-                Clássico
-              </button>
-              <button type="button" class="avatar-mode-btn" data-avatar-mode="nostalgico" id="btnAvatarNostalgico">
-                Nostálgico
+              <button type="button" class="avatar-mode-btn active" data-avatar-mode="padrao" id="btnAvatarPadrao">
+                Padrão
               </button>
               <button type="button" class="avatar-mode-btn" data-avatar-mode="custom" id="btnAvatarCustom">
                 Personalizado
@@ -217,49 +214,103 @@
             </label>
           </section>
 
-          <!-- Gadget de Área de Trabalho (Estilo Windows 7) -->
+          <!-- Personalizar Menu da Barra de Tarefas -->
           <section class="setup-section">
-            <div class="section-title" id="sectionGadgetTitle">Gadget de Área de Trabalho</div>
-            <label class="checkbox-label" for="checkGadgetAtivo">
-              <input type="checkbox" id="checkGadgetAtivo" class="checkbox-input">
-              <span id="spanGadgetAtivo">Ativar Gadget na Área de Trabalho (monitor translúcido de CPU/RAM com atalhos)</span>
-            </label>
-            <div style="margin-top: 10px;">
-              <button type="button" class="btn-secondary" id="btnRedefinirPosicaoGadget" style="font-size: 11.5px; padding: 4px 10px;">
-                Redefinir Posição do Gadget
-              </button>
+            <div class="section-title" id="sectionTrayTitle">Personalizar Menu da Barra de Tarefas</div>
+            <p class="input-hint" id="hintTray" style="margin-top: 2px; margin-bottom: 8px;">
+              Escolha quais itens opcionais devem aparecer no menu ao clicar com o botão direito no ícone da bandeja.
+            </p>
+            <div class="proactive-controls">
+              <label class="checkbox-label" for="checkTrayPergunta">
+                <input type="checkbox" id="checkTrayPergunta" class="checkbox-input" checked>
+                <span id="spanTrayPergunta">Conversar com o Mii</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayHistorico">
+                <input type="checkbox" id="checkTrayHistorico" class="checkbox-input" checked>
+                <span id="spanTrayHistorico">Últimas Mensagens da IA</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayClipboard">
+                <input type="checkbox" id="checkTrayClipboard" class="checkbox-input" checked>
+                <span id="spanTrayClipboard">Histórico de Copiar (Clipboard)</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayTimer">
+                <input type="checkbox" id="checkTrayTimer" class="checkbox-input" checked>
+                <span id="spanTrayTimer">Novo Lembrete / Timer</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayOrganiza">
+                <input type="checkbox" id="checkTrayOrganiza" class="checkbox-input" checked>
+                <span id="spanTrayOrganiza">Organizar Arquivos</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayFaxina">
+                <input type="checkbox" id="checkTrayFaxina" class="checkbox-input" checked>
+                <span id="spanTrayFaxina">Limpar Lixo do PC</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayOtimizarRam">
+                <input type="checkbox" id="checkTrayOtimizarRam" class="checkbox-input" checked>
+                <span id="spanTrayOtimizarRam">Otimizar Memória RAM</span>
+              </label>
+              <label class="checkbox-label" for="checkTrayBusca">
+                <input type="checkbox" id="checkTrayBusca" class="checkbox-input" checked>
+                <span id="spanTrayBusca">Buscar Arquivos no PC</span>
+              </label>
             </div>
           </section>
         </div>
 
         <!-- ABA 4: Ferramentas -->
         <div class="tab-pane" id="tab-ferramentas" role="tabpanel" aria-labelledby="tabBtnFerramentas">
-          <!-- Organizador de Arquivos (Árvore de Regras) -->
-          <section class="setup-section">
-            <div class="section-title" id="sectionOrganizadorTitle">Organizador de Arquivos</div>
-            <p class="input-hint" id="hintOrganizador" style="margin-top: 2px; margin-bottom: 8px;">
-              Personalize para onde cada tipo de arquivo é movido ao organizar a pasta Downloads.
-            </p>
-            <div class="organizador-tree-wrapper">
-              <div class="organizador-tree-actions">
-                <button type="button" class="btn-secondary" id="btnRestaurarRegrasOrganizador" style="font-size: 11.5px; padding: 4px 8px;">
-                  Restaurar Padrões
-                </button>
-                <button type="button" class="btn-secondary" id="btnSalvarRegrasOrganizador" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;">
-                  Salvar Regras
-                </button>
+          <!-- Organizador de Arquivos (Árvore de Regras Expansível) -->
+          <details class="setup-section organizador-accordion" id="accordionOrganizador">
+            <summary class="organizador-accordion-summary">
+              <div class="organizador-accordion-title-row">
+                <div class="section-title organizador-accordion-title" id="sectionOrganizadorTitle">Configurar Regras do Organizador</div>
+                <span class="organizador-accordion-toggle-badge" id="badgeAccordionOrganizador">Expandir</span>
               </div>
-              <div id="statusRegrasOrganizador" class="aero-status-msg" style="display: none;"></div>
-              <div class="organizador-tree-scroll" id="organizadorArvoreContainer">
-                <!-- Nós da árvore gerados via TypeScript -->
+              <p class="input-hint" id="hintOrganizador" style="margin-top: 2px; margin-bottom: 0;">
+                Personalize para onde cada tipo de arquivo é movido ao organizar a pasta Downloads.
+              </p>
+            </summary>
+            <div class="organizador-accordion-body">
+              <div class="organizador-tree-wrapper">
+                <div class="organizador-tree-actions">
+                  <button type="button" class="btn-secondary" id="btnRestaurarRegrasOrganizador" style="font-size: 11.5px; padding: 4px 8px;">
+                    Restaurar Padrões
+                  </button>
+                  <button type="button" class="btn-secondary" id="btnSalvarRegrasOrganizador" style="font-size: 11.5px; padding: 4px 10px; font-weight: 600;">
+                    Salvar Regras
+                  </button>
+                </div>
+                <div id="statusRegrasOrganizador" class="aero-status-msg" style="display: none;"></div>
+                <div class="organizador-tree-scroll" id="organizadorArvoreContainer">
+                  <!-- Nós da árvore gerados via TypeScript -->
+                </div>
               </div>
             </div>
-          </section>
+          </details>
 
           <!-- Atalhos Globais -->
           <section class="setup-section shortcuts-section">
             <div class="section-title" id="sectionShortcutsTitle">Atalhos do Teclado</div>
-            <div class="shortcut-card">
+
+            <!-- 1. Menu Radial Rápido (Prioridade 1) -->
+            <div class="shortcut-card" id="cardAtalhoRadial">
+              <input type="checkbox" id="checkAtalhoRadial" class="checkbox-input shortcut-checkbox" checked title="Ativar ou desativar este atalho" />
+              <div class="shortcut-info">
+                <span class="shortcut-label" id="shortcutRadialLabel">Menu Radial Rápido</span>
+                <span class="shortcut-desc" id="shortcutRadialDesc">Abre o menu circular com ações instantâneas no cursor.</span>
+              </div>
+              <div class="shortcut-keys" id="shortcutRadialKeys">
+                <kbd class="key-badge">Ctrl</kbd>
+                <span class="key-plus">+</span>
+                <kbd class="key-badge">Shift</kbd>
+                <span class="key-plus">+</span>
+                <kbd class="key-badge" id="keySpaceBadge">Espaço</kbd>
+              </div>
+            </div>
+
+            <!-- 2. Conversa Rápida com o Mii (Prioridade 2) -->
+            <div class="shortcut-card" id="cardAtalhoChat">
+              <input type="checkbox" id="checkAtalhoChat" class="checkbox-input shortcut-checkbox" checked title="Ativar ou desativar este atalho" />
               <div class="shortcut-info">
                 <span class="shortcut-label" id="shortcutChatLabel">Conversa Rápida com o Mii</span>
                 <span class="shortcut-desc" id="shortcutChatDesc">Abre a caixa de diálogo instantânea a partir de qualquer aplicativo.</span>
@@ -272,6 +323,65 @@
                 <kbd class="key-badge">M</kbd>
               </div>
             </div>
+
+            <!-- Atalhos Adicionais (Recolhidos por padrão) -->
+            <div class="shortcuts-extra-container" id="shortcutsExtraContainer" style="display: none;">
+              <!-- 3. Busca Rápida de Arquivos -->
+              <div class="shortcut-card" id="cardAtalhoBusca">
+                <input type="checkbox" id="checkAtalhoBusca" class="checkbox-input shortcut-checkbox" checked title="Ativar ou desativar este atalho" />
+                <div class="shortcut-info">
+                  <span class="shortcut-label" id="shortcutBuscaLabel">Busca Rápida de Arquivos</span>
+                  <span class="shortcut-desc" id="shortcutBuscaDesc">Localiza arquivos em Downloads, Documentos e Desktop instantaneamente.</span>
+                </div>
+                <div class="shortcut-keys" id="shortcutBuscaKeys">
+                  <kbd class="key-badge">Ctrl</kbd>
+                  <span class="key-plus">+</span>
+                  <kbd class="key-badge">Shift</kbd>
+                  <span class="key-plus">+</span>
+                  <kbd class="key-badge">F</kbd>
+                </div>
+              </div>
+
+              <!-- 4. Histórico do Clipboard -->
+              <div class="shortcut-card" id="cardAtalhoClipboard">
+                <input type="checkbox" id="checkAtalhoClipboard" class="checkbox-input shortcut-checkbox" checked title="Ativar ou desativar este atalho" />
+                <div class="shortcut-info">
+                  <span class="shortcut-label" id="shortcutClipboardLabel">Histórico do Clipboard</span>
+                  <span class="shortcut-desc" id="shortcutClipboardDesc">Abre o histórico de itens copiados recentemente para colar.</span>
+                </div>
+                <div class="shortcut-keys" id="shortcutClipboardKeys">
+                  <kbd class="key-badge">Ctrl</kbd>
+                  <span class="key-plus">+</span>
+                  <kbd class="key-badge">Shift</kbd>
+                  <span class="key-plus">+</span>
+                  <kbd class="key-badge">V</kbd>
+                </div>
+              </div>
+
+              <!-- 5. Inspecionar Tela ("Olhar Tela") -->
+              <div class="shortcut-card" id="cardAtalhoOlharTela">
+                <input type="checkbox" id="checkAtalhoOlharTela" class="checkbox-input shortcut-checkbox" checked title="Ativar ou desativar este atalho" />
+                <div class="shortcut-info">
+                  <span class="shortcut-label" id="shortcutOlharTelaLabel">Inspecionar Tela ("Olhar Tela")</span>
+                  <span class="shortcut-desc" id="shortcutOlharTelaDesc">O Mii captura e analisa o conteúdo da sua tela atual com IA.</span>
+                </div>
+                <div class="shortcut-keys" id="shortcutOlharTelaKeys">
+                  <kbd class="key-badge">Ctrl</kbd>
+                  <span class="key-plus">+</span>
+                  <kbd class="key-badge">Shift</kbd>
+                  <span class="key-plus">+</span>
+                  <kbd class="key-badge">S</kbd>
+                </div>
+              </div>
+            </div>
+
+            <!-- Botão Frutiger Aero para Alternar Recolhimento -->
+            <button type="button" class="btn-toggle-shortcuts" id="btnToggleShortcuts" aria-expanded="false">
+              <span id="labelToggleShortcuts">Mostrar mais atalhos</span>
+              <svg class="toggle-shortcuts-icon" id="iconToggleShortcuts" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
           </section>
 
           <!-- Formulário de Feedback -->
@@ -312,7 +422,7 @@
         <div class="footer-meta-row">
           <div class="version-update-container">
             <div class="version-row">
-              <span class="version-label">v1.6.1</span>
+              <span class="version-label">v1.7.0</span>
               <span class="version-separator">•</span>
               <button type="button" class="btn-check-updates" id="btnCheckUpdates">
                 <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

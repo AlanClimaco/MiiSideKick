@@ -143,6 +143,9 @@ static SESSAO_TELA_CHEIA_ATIVA: Mutex<Option<InfoSessaoFoco>> = Mutex::new(None)
 /// Última sessão finalizada que pode disparar comentário contextual amigável
 static ULTIMA_SESSAO_FINALIZADA: Mutex<Option<InfoSessaoFoco>> = Mutex::new(None);
 
+/// Registra o momento em que o último comentário contextual pós-jogo foi disparado (para cooldown por frequência)
+static ULTIMO_COMENTARIO_CONTEXTUAL: Mutex<Option<Instant>> = Mutex::new(None);
+
 /// Obtém informações da janela ativa em primeiro plano (nome do executável e título)
 pub fn obter_info_janela_foco() -> Option<(String, String)> {
     #[cfg(target_os = "windows")]
@@ -477,8 +480,8 @@ pub fn purgar_e_obter_proxima_notificacao(ram_atual_pct: f64) -> Option<Notifica
     // 1. Filtra itens expirados
     fila.retain(|item| item.timestamp.elapsed() <= item.validade);
 
-    // 2. Descarta alertas de RAM acumulados se a memória já tiver normalizado
-    if ram_atual_pct < 80.0 {
+    // 2. Descarta alertas de RAM acumulados se a memória já tiver normalizado (< 85.0%)
+    if ram_atual_pct < 85.0 {
         let antes = fila.len();
         fila.retain(|item| item.categoria != CategoriaNotificacao::Ram);
         let descartados = antes - fila.len();
@@ -538,23 +541,55 @@ pub fn purgar_e_obter_proxima_notificacao(ram_atual_pct: f64) -> Option<Notifica
     escolhido.map(|item| item.payload)
 }
 
-/// Consome um comentário contextual amigável após o encerramento de um jogo/processo (~50% de chance)
-pub fn consumir_comentario_contextual_pos_jogo(is_en: bool) -> Option<NotificacaoPayload> {
+/// Consome um comentário contextual amigável após o encerramento de um jogo/processo em tela cheia.
+/// Respeita:
+/// 1. Duração mínima de 20 minutos (1200 segundos) para considerar apto a comentários (sessões rápidas são ignoradas).
+/// 2. Cooldown e probabilidade por frequência (AppConfig.frequencia_alertas):
+///    - Discreto: Cooldown de 90 a 120 minutos (90 min); probabilidade de 15%.
+///    - Equilibrado: Cooldown de 45 a 60 minutos (45 min); probabilidade de 35%.
+///    - Frequente: Cooldown de 20 a 30 minutos (20 min); probabilidade de 50%.
+pub fn consumir_comentario_contextual_pos_jogo(
+    is_en: bool,
+    frequencia: &str,
+) -> Option<NotificacaoPayload> {
     let mut sessao_opt = ULTIMA_SESSAO_FINALIZADA.lock().ok()?;
     let sessao = sessao_opt.take()?;
 
-    // Considera apenas sessões com duração mínima de 30 segundos
-    if sessao.duracao.as_secs() < 30 {
+    // 1. Duração Mínima de Sessão: pelo menos 20 minutos (1200 segundos)
+    // Fechar um vídeo rápido de 5 minutos de YouTube ou jogo rápido deve ser completamente ignorado.
+    if sessao.duracao.as_secs() < 20 * 60 {
         return None;
     }
 
-    // Sorteio de 50% de probabilidade
-    let agora_millis = std::time::SystemTime::now()
+    // 2. Cooldown e Probabilidade por Frequência
+    let (cooldown_minutos, probabilidade_pct) = match frequencia.to_lowercase().trim() {
+        "discreto" => (90u64, 15u32),
+        "frequente" => (20u64, 50u32),
+        _ => (45u64, 35u32), // equilibrado (padrão)
+    };
+
+    if let Ok(ultimo_guard) = ULTIMO_COMENTARIO_CONTEXTUAL.lock() {
+        if let Some(ultimo) = *ultimo_guard {
+            if ultimo.elapsed() < Duration::from_secs(cooldown_minutos * 60) {
+                return None;
+            }
+        }
+    }
+
+    // Sorteio de probabilidade (0..99)
+    let agora_nanos = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap_or_default()
-        .subsec_millis();
-    if agora_millis % 2 != 0 {
+        .subsec_nanos();
+    let sorteio = (agora_nanos % 100) as u32;
+
+    if sorteio >= probabilidade_pct {
         return None;
+    }
+
+    // Atualiza o registro do último comentário contextual aceito e disparado
+    if let Ok(mut ultimo_guard) = ULTIMO_COMENTARIO_CONTEXTUAL.lock() {
+        *ultimo_guard = Some(Instant::now());
     }
 
     let nome_amigavel = formatar_nome_processo(&sessao.nome_app);
@@ -583,6 +618,8 @@ pub fn consumir_comentario_contextual_pos_jogo(is_en: bool) -> Option<Notificaca
         eh_reconsulta: false,
         timestamp: 0,
         hora_formatada: String::new(),
+        comando_executar: None,
+        comando_args: None,
     })
 }
 
@@ -663,6 +700,8 @@ mod tests {
             eh_reconsulta: false,
             timestamp: 0,
             hora_formatada: String::new(),
+            comando_executar: None,
+            comando_args: None,
         }
     }
 
@@ -743,5 +782,46 @@ mod tests {
         assert_eq!(formatar_nome_processo("javaw"), "Minecraft");
         assert_eq!(formatar_nome_processo("steam"), "Steam");
         assert_eq!(formatar_nome_processo("meu_jogo"), "meu_jogo");
+    }
+
+    #[test]
+    fn test_comentario_contextual_ignora_sessao_curta_5min() {
+        let _guard = TEST_MUTEX.lock().unwrap();
+        // Simula sessão de apenas 5 minutos (300 segundos, como vídeo de YouTube ou jogo rápido)
+        if let Ok(mut lock) = ULTIMA_SESSAO_FINALIZADA.lock() {
+            *lock = Some(InfoSessaoFoco {
+                nome_app: "chrome.exe".to_string(),
+                titulo_janela: "YouTube".to_string(),
+                timestamp_inicio: Instant::now() - Duration::from_secs(300),
+                duracao: Duration::from_secs(300),
+            });
+        }
+
+        // Não deve gerar comentário contextual, pois durou menos de 20 minutos
+        let resultado = consumir_comentario_contextual_pos_jogo(false, "discreto");
+        assert!(resultado.is_none(), "Sessão de 5 minutos deveria ser completamente ignorada");
+    }
+
+    #[test]
+    fn test_comentario_contextual_cooldown_discreto() {
+        let _guard = TEST_MUTEX.lock().unwrap();
+        // Define último comentário recente (há 10 minutos)
+        if let Ok(mut lock) = ULTIMO_COMENTARIO_CONTEXTUAL.lock() {
+            *lock = Some(Instant::now() - Duration::from_secs(10 * 60));
+        }
+
+        // Simula sessão de 30 minutos (1800 segundos)
+        if let Ok(mut lock) = ULTIMA_SESSAO_FINALIZADA.lock() {
+            *lock = Some(InfoSessaoFoco {
+                nome_app: "steam.exe".to_string(),
+                titulo_janela: "Game".to_string(),
+                timestamp_inicio: Instant::now() - Duration::from_secs(1800),
+                duracao: Duration::from_secs(1800),
+            });
+        }
+
+        // No modo discreto (cooldown 90 min), não deve disparar
+        let resultado = consumir_comentario_contextual_pos_jogo(false, "discreto");
+        assert!(resultado.is_none(), "Deveria estar em cooldown no modo discreto");
     }
 }

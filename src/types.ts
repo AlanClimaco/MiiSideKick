@@ -8,10 +8,13 @@ export interface AppConfig {
     frequencia_alertas: string;
     idioma: string;
     gostos_usuario?: string;
-    gadget_ativo?: boolean;
-    gadget_x?: number;
-    gadget_y?: number;
-    avatar_modo?: string; // "classico", "nostalgico", "custom"
+    avatar_modo?: string; // "padrao", "custom"
+    tray_itens_visiveis?: string[];
+    atalho_radial?: boolean;
+    atalho_chat?: boolean;
+    atalho_busca?: boolean;
+    atalho_clipboard?: boolean;
+    atalho_olhar_tela?: boolean;
 }
 
 export interface RegraPasta {
@@ -25,13 +28,6 @@ export interface RegraPasta {
 export interface RegrasOrganizador {
     versao: number;
     regras: RegraPasta[];
-}
-
-export interface TelemetriaRapida {
-    cpu_uso: number;
-    ram_uso_pct: number;
-    ram_usada_mb: number;
-    ram_total_mb: number;
 }
 
 export interface UserInfo {
@@ -51,6 +47,8 @@ export interface PayloadNotificacao {
     eh_reconsulta?: boolean;
     timestamp?: number;
     hora_formatada?: string;
+    comando_executar?: string | null;
+    comando_args?: any;
 }
 
 export interface ClipboardItem {
@@ -59,6 +57,13 @@ export interface ClipboardItem {
     tamanho: number;
     timestamp: number;
     hora_formatada: string;
+}
+
+export interface ResultadoBusca {
+    nome: string;
+    caminho: string;
+    tamanho_formatado: string;
+    data_modificacao: string;
 }
 
 declare global {
@@ -72,7 +77,9 @@ declare global {
             tocarSom?: boolean,
             acao?: string | null,
             acaoRotulo?: string | null,
-            ehReconsulta?: boolean
+            ehReconsulta?: boolean,
+            comandoExecutar?: string | null,
+            comandoArgs?: any
         ) => void;
     }
 }

@@ -22,6 +22,7 @@
 .container {
     display: flex;
     align-items: flex-end;
+    justify-content: flex-end;
     gap: 12px;
     padding: 16px 20px 20px 16px;
     animation: slideIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -34,6 +35,7 @@
     display: flex;
     flex-direction: column;
     align-items: flex-end;
+    justify-content: flex-end;
     gap: 8px;
     position: relative;
     min-width: 0;
@@ -45,17 +47,22 @@
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: #1a2a3a;
-    padding: 14px 18px;
+    padding: 14px 26px 14px 18px;
     border-radius: 16px;
     box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.9), 0 8px 24px rgba(0, 30, 60, 0.25);
     font-weight: 400;
     font-size: 13.5px;
     line-height: 1.45;
-    min-width: 0;
+    min-width: 100px;
     max-width: 280px;
+    height: fit-content;
+    margin-top: auto;
     overflow-wrap: anywhere;
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
 }
 
 .balao::after {
@@ -74,10 +81,13 @@
 }
 
 #mensagem {
-    max-height: max(40px, calc(100vh - 154px));
-    overflow-y: auto;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(70, 126, 170, 0.55) transparent;
+    height: auto;
+    max-height: none;
+    overflow-y: visible;
+    overflow-x: hidden;
+    scrollbar-width: none;
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .referencia-container {
@@ -199,18 +209,18 @@
 
 .btn-fechar {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 7px;
+    right: 7px;
     background: linear-gradient(to bottom, rgba(255, 255, 255, 0.88) 0%, rgba(232, 245, 255, 0.70) 48%, rgba(177, 208, 234, 0.78) 49%, rgba(217, 238, 251, 0.85) 100%);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
     color: #355169;
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 18px;
+    height: 18px;
     padding: 0;
-    font-size: 13px;
+    font-size: 11px;
     font-weight: bold;
     cursor: pointer;
     display: flex;

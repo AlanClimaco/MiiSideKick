@@ -28,5 +28,4 @@ dist-ssr
 src-tauri/gen/
 
 .env
-plano_implementacao.md
 diretrizes.md

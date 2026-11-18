@@ -210,7 +210,7 @@ pub fn resolver_mapa_avatares(modo: &str) -> HashMap<String, String> {
         }
     }
 
-    // Modo "classico" ou "nostalgico" ou fallback seguro:
+    // Modo "padrao" ou fallback seguro:
     // Retorna vazio para que o frontend utilize os assets embutidos empacotados pelo bundler
     for &reacao in &REACOES_OFICIAIS {
         resultado.insert(reacao.to_string(), String::new());
@@ -225,7 +225,7 @@ pub fn resolver_mapa_avatares(modo: &str) -> HashMap<String, String> {
 
 #[tauri::command]
 pub fn obter_mapa_avatares(modo: Option<String>) -> HashMap<String, String> {
-    let modo_final = modo.unwrap_or_else(|| "classico".to_string());
+    let modo_final = modo.unwrap_or_else(|| "padrao".to_string());
     resolver_mapa_avatares(&modo_final)
 }
 
@@ -313,7 +313,7 @@ mod tests {
 
     #[test]
     fn test_fallback_mapa_quando_vazio() {
-        let mapa = resolver_mapa_avatares("classico");
+        let mapa = resolver_mapa_avatares("padrao");
         assert_eq!(mapa.len(), 8);
         assert!(mapa.contains_key("normal"));
         assert!(mapa.contains_key("feliz"));
